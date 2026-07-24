@@ -1,0 +1,20 @@
+{
+  "name": "vault-review-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Phone-accessible review board backed by a private Vercel Blob store; synced from the local Workbench.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node local-server.js",
+    "sync": "node sync.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

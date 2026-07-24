@@ -1,0 +1,56 @@
+# Allowlist .gitignore: ignore everything at the repo root, then re-include ONLY the
+# shippable files. New scratch (_verify_*.js, _shots_*.js, _cloud_items.json, results, etc.)
+# is ignored by default — you must add a keeper here on purpose. Re-including a directory
+# tracks its contents, since git recurses into an un-ignored directory.
+
+/*
+
+# --- Keeper directories (all contents are keepers) ---
+!/api/
+!/public/
+!/test/
+
+# --- Keeper root files ---
+!/.gitignore
+!/.gitattributes
+!/.env.example
+!/.nvmrc
+!/package.json
+!/package-lock.json
+!/README.md
+!/RESUME.md
+!/SPEC.md
+!/CODEX.md
+!/sync.js
+!/sync-cloud.js
+!/local-server.js
+!/enqueue.js
+!/consolidate-projects.js
+!/migrate-local.js
+!/cleanup-data.js
+!/docket-daemon.js
+!/docket-daemon.vbs
+!/sync-review.cmd
+!/_sync_once.cmd
+
+# --- Belt-and-suspenders (these win over any re-include above; keep secrets/bulk out even
+#     if someone later adds a stray !re-include) ---
+
+# Secrets / credentials, by name.
+.env
+.env.*
+!.env.example
+.passcode.txt
+
+# Deploy state (holds sensitive Vercel project IDs) + tool state.
+.vercel/
+.impeccable/
+
+# Regenerable / bulk (re-obtainable via `npm ci`, re-runnable from the _shots_*.js scripts).
+node_modules/
+_shots/
+_backups/
+*.log
+
+# Session task-state locks.
+*.md.lock.json

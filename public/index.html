@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f2f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191622" media="(prefers-color-scheme: dark)">
+<title>Docket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Design tokens ported verbatim from the local Workbench reviewer (workbench/public/tokens.css +
+     the reviewer's indigo accent family) so the phone board reads identically to the desktop app:
+     Sora, OKLCH indigo (hue 264), elevation over borders. */
+  :root{
+    color-scheme: light dark;
+    --h: 264;
+    --bg: oklch(0.96 0.009 var(--h));
+    --surface: oklch(0.995 0.004 var(--h));
+    --surface-2: oklch(0.975 0.009 var(--h));
+    --ink: oklch(0.23 0.03 var(--h));
+    --muted: oklch(0.47 0.035 var(--h));
+    --line: oklch(0.62 0.022 var(--h));
+    --answered: oklch(0.55 0.14 145);
+    --answered-wash: oklch(0.95 0.05 145);
+    --rejected: oklch(0.55 0.18 25);
+    --rejected-wash: oklch(0.95 0.05 25);
+    --radius: 10px;
+    --fs-title: 1.1875rem;
+    --shadow: 0 1px 2px -1px oklch(0.45 0.04 var(--h) / 0.10), 0 5px 14px -4px oklch(0.45 0.04 var(--h) / 0.12);
+    --sans: 'Sora', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --accent: oklch(0.50 0.20 264);
+    --accent-ink: oklch(0.99 0 0);
+    --accent-wash: oklch(0.95 0.035 264);
+    --pending-wash: oklch(0.95 0.03 264);
+    --control: oklch(0.90 0.014 264);
+    --control-hover: oklch(0.855 0.025 264);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme]){
+      --bg: oklch(0.17 0.03 var(--h));
+      --surface: oklch(0.225 0.035 var(--h));
+      --surface-2: oklch(0.275 0.038 var(--h));
+      --ink: oklch(0.93 0.008 var(--h));
+      --muted: oklch(0.68 0.02 var(--h));
+      --line: oklch(0.55 0.02 var(--h));
+      --answered: oklch(0.68 0.14 145);
+      --answered-wash: oklch(0.26 0.05 145);
+      --rejected: oklch(0.68 0.16 25);
+      --rejected-wash: oklch(0.28 0.05 25);
+      --shadow: 0 1px 2px -1px oklch(0 0 0 / 0.30), 0 6px 18px -5px oklch(0 0 0 / 0.42);
+      --accent: oklch(0.70 0.16 264);
+      --accent-ink: oklch(0.16 0.02 264);
+      --accent-wash: oklch(0.30 0.05 264);
+      --pending-wash: oklch(0.29 0.04 264);
+      --control: oklch(0.32 0.045 264);
+      --control-hover: oklch(0.385 0.06 264);
+    }
+  }
+  [data-theme="dark"]{
+    --bg: oklch(0.17 0.03 var(--h));
+    --surface: oklch(0.225 0.035 var(--h));
+    --surface-2: oklch(0.275 0.038 var(--h));
+    --ink: oklch(0.93 0.008 var(--h));
+    --muted: oklch(0.68 0.02 var(--h));
+    --line: oklch(0.55 0.02 var(--h));
+    --answered: oklch(0.68 0.14 145);
+    --rejected: oklch(0.68 0.16 25);
+    --shadow: 0 1px 2px -1px oklch(0 0 0 / 0.30), 0 6px 18px -5px oklch(0 0 0 / 0.42);
+    --accent: oklch(0.70 0.16 264);
+    --accent-ink: oklch(0.16 0.02 264);
+    --accent-wash: oklch(0.30 0.05 264);
+    --pending-wash: oklch(0.29 0.04 264);
+    --control: oklch(0.32 0.045 264);
+    --control-hover: oklch(0.385 0.06 264);
+  }
+  [data-theme="dark"]{ --answered-wash: oklch(0.26 0.05 145); --rejected-wash: oklch(0.28 0.05 25); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none!important; animation:none!important; } }
+  html,body { overscroll-behavior-y:none; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:0.9375rem/1.5 var(--sans);
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    font-kerning:normal; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased;
+  }
+  svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round; display:block; }
+
+  /* ---- header ---- */
+  header {
+    position:sticky; top:0; z-index:5; background:var(--bg);
+    border-bottom:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 12px;
+    display:flex; align-items:center; gap:10px; min-height:52px;
+  }
+  .h-title { display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
+  .h-title h1 { font-size:1.5rem; margin:0; font-weight:700; letter-spacing:-.01em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .h-sub { font-size:0.75rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .h-actions { display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .count { color:var(--muted); font-size:0.75rem; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  /* root summary: N proj · reviews · decisions · briefs · total pending — a stat cluster in the top-right */
+  .hstats { display:flex; align-items:center; gap:4px; margin-right:2px; font-variant-numeric:tabular-nums; }
+  .stat { display:inline-flex; align-items:center; gap:3px; height:28px; padding:0 8px; border-radius:8px;
+    background:var(--control); color:var(--muted); font-size:0.78rem; font-weight:600; white-space:nowrap; }
+  .stat svg { width:15px; height:15px; }
+  .stat-total { background:var(--pending-wash); color:var(--fg); }
+  @media (max-width:480px){ .stat { height:26px; padding:0 6px; font-size:0.72rem; gap:2px; } .stat svg { width:14px; height:14px; } .stat-proj { display:none; } }
+  .iconbtn {
+    display:grid; place-items:center; width:36px; height:36px; border:0; border-radius:8px;
+    background:var(--control); color:var(--muted); cursor:pointer; padding:0; touch-action:manipulation;
+  }
+  .iconbtn:hover:not([disabled]) { background:var(--control-hover); color:var(--accent); }
+  .iconbtn:active:not([disabled]) { background:var(--control-hover); color:var(--accent); }
+  .iconbtn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .iconbtn.spin svg { animation:spin .7s linear infinite; }
+  /* phone width: compact the 8-item root toolbar so the title never truncates */
+  @media (max-width:480px){
+    header { gap:8px; padding-left:12px; padding-right:12px; }
+    .h-actions { gap:3px; }
+    header .iconbtn { width:32px; height:32px; }
+    header .iconbtn svg { width:18px; height:18px; }
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  #wrap { padding:18px 18px calc(env(safe-area-inset-bottom) + 40px); max-width:640px; margin:0 auto;
+    display:flex; flex-direction:column; gap:12px; }
+  .kicker { color:var(--muted); font-size:0.75rem; font-weight:600; letter-spacing:0; margin:6px 2px -2px; }
+
+  /* ---- list rows (projects / sets) ---- */
+  .row {
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    background:var(--surface); border:0; border-radius:var(--radius); color:var(--ink);
+    padding:15px 18px; margin:0; cursor:pointer; font:inherit;
+    box-shadow:var(--shadow); touch-action:manipulation;
+    transition:background 140ms ease;
+  }
+  .row:hover { background:color-mix(in oklch, var(--accent) 5%, var(--surface)); }
+  .row:active { background:var(--accent-wash); }
+  .row .r-main { flex:1; min-width:0; }
+  .row .r-name { font-size:1rem; font-weight:600; letter-spacing:-.006em; word-break:break-word; }
+  .row .r-sub { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+  .row .r-count { color:var(--muted); font-size:0.8125rem; font-variant-numeric:tabular-nums; }
+  .row .chev { color:var(--muted); opacity:.7; }
+  /* type icon on the project's "by type" menu rows — reuses the s-kind color tokens */
+  .row-ic { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; flex:none; }
+  .row-ic svg { width:18px; height:18px; }
+  .row-ic.s-review { background:var(--accent-wash); color:var(--accent); }
+  .row-ic.s-brief { background:var(--answered-wash); color:var(--answered); }
+  .row-ic.s-decision { background:color-mix(in oklch, var(--ink) 8%, var(--surface)); color:var(--ink); }
+
+  /* ---- card ---- */
+  .card {
+    background:var(--surface); border-radius:var(--radius); padding:16px 18px; margin:0;
+    box-shadow:var(--shadow);
+  }
+  .c-head { display:flex; align-items:flex-start; gap:10px; }
+  .c-title { flex:1; min-width:0; font-size:var(--fs-title); font-weight:700; line-height:1.3;
+    letter-spacing:-.011em; text-wrap:balance; overflow-wrap:break-word; }
+  .c-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0 0; min-width:0; }
+  .c-date { font-size:0.75rem; font-weight:600; color:var(--muted); background:var(--pending-wash);
+    padding:2px 8px; border-radius:999px; font-variant-numeric:tabular-nums; }
+  .c-date::before { content:"◷ "; opacity:.7; }
+  .blk { font-size:0.75rem; font-weight:600; color:var(--rejected); background:var(--rejected-wash, color-mix(in oklch, var(--rejected) 12%, var(--surface)));
+    padding:2px 8px; border-radius:999px; }
+  .chip-tag { display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:600;
+    padding:3px 10px; border-radius:999px; color:var(--muted);
+    background:color-mix(in oklch, var(--ink) 6%, var(--surface));
+    max-width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .exp {
+    flex-shrink:0; display:grid; place-items:center; width:32px; height:32px; margin:-4px -4px 0 0;
+    border:0; border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; padding:0;
+  }
+  .exp:hover { background:var(--control); color:var(--accent); }
+  .exp:active { background:var(--control); color:var(--accent); }
+  .exp:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .exp svg { width:18px; height:18px; transition:transform .18s ease; }
+  .exp.done { color:var(--answered); }
+  .card.open .exp svg { transform:rotate(180deg); }
+  .card.open .exp.arch svg, .card.open .exp.rtog svg { transform:none; }  /* only the caret rotates */
+
+  /* ---- brief card (read-only reading card) ---- */
+  .unread-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; margin-top:8px; }
+  .card.brief.is-read .c-title { font-weight:600; color:var(--muted); }
+  .card.brief.unread .c-title { font-weight:700; color:var(--ink); }
+  .card.brief .exp.rtog svg { width:19px; height:19px; }
+  .card.brief.unread .exp.rtog { color:var(--accent); }
+  .fp-row { display:flex; align-items:center; gap:6px; margin:9px 0 0; min-width:0; }
+  .fp { flex:1; min-width:0; font-family:var(--mono); font-size:0.75rem; color:var(--muted);
+    background:var(--surface-2); padding:4px 9px; border-radius:6px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fp-copy { flex-shrink:0; display:grid; place-items:center; width:30px; height:30px; border:0;
+    border-radius:7px; background:var(--control); color:var(--muted); cursor:pointer; padding:0; }
+  .fp-copy svg { width:16px; height:16px; }
+  .fp-copy:hover { background:var(--control-hover); color:var(--accent); }
+  .fp-copy:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* collapsed: details hidden */
+  .c-body { display:none; margin-top:12px; }
+  .card.open .c-body { display:block; }
+  .desc { color:var(--ink); opacity:.9; font-size:0.9375rem; line-height:1.5;
+    white-space:pre-wrap; overflow-wrap:break-word; max-width:66ch; }
+  .desc strong { opacity:1; font-weight:700; }
+  .sec { margin:12px 0 0; max-width:66ch; }
+  .sec-l { color:var(--ink); font-size:0.75rem; font-weight:600; letter-spacing:0;
+    display:block; margin-bottom:3px; }
+  .sec-t { color:var(--ink); opacity:.9; font-size:0.9375rem; line-height:1.5;
+    white-space:pre-wrap; overflow-wrap:break-word; }
+  /* markdown-rendered bodies: NORMAL white-space so hard-wrapped source reflows to the
+     container (the pre-wrap in .desc/.sec-t preserved every 80-col newline -> "random newlines"). */
+  .md-body { color:var(--ink); opacity:.92; font-size:0.9375rem; line-height:1.55;
+    white-space:normal; overflow-wrap:break-word; max-width:66ch; }
+  .md-body > :first-child { margin-top:0; }
+  .md-body > :last-child { margin-bottom:0; }
+  .md-body p { margin:0 0 0.6em; }
+  .md-body ul, .md-body ol { margin:0.4em 0; padding-left:1.4em; }
+  .md-body li { margin:0.15em 0; }
+  .md-body li > p { margin:0; }
+  .md-body h1, .md-body h2, .md-body h3 { line-height:1.25; margin:0.9em 0 0.35em;
+    font-weight:700; letter-spacing:-.01em; }
+  .md-body h1 { font-size:1.15rem; } .md-body h2 { font-size:1.05rem; } .md-body h3 { font-size:0.95rem; }
+  .md-body strong { font-weight:700; }
+  .md-body code { font-family:var(--mono); font-size:0.85em; background:var(--surface-2);
+    padding:1px 5px; border-radius:5px; }
+  .md-body pre { background:var(--surface-2); padding:10px 12px; border-radius:8px;
+    overflow-x:auto; margin:0.6em 0; }
+  .md-body pre code { background:transparent; padding:0; }
+  .md-body blockquote { margin:0.6em 0; padding:2px 0 2px 12px; border-left:2px solid var(--line);
+    color:var(--muted); }
+  .md-body hr { border:0; border-top:1px solid var(--line); margin:0.9em 0; }
+  /* display:block lets a wide table scroll horizontally inside a narrow phone card instead of overflowing */
+  .md-body table { border-collapse:collapse; margin:0.6em 0; font-size:0.875rem;
+    display:block; overflow-x:auto; max-width:100%; }
+  .md-body th, .md-body td { border:1px solid var(--line); padding:4px 9px; text-align:left; vertical-align:top; }
+  .md-body th { background:var(--surface-2); font-weight:600; }
+  a { color:var(--accent); overflow-wrap:break-word; }
+  a.link-mono { font-family:var(--mono); font-size:0.8125rem; word-break:break-all; }
+  /* filled tonal input — no border (DESIGN: borders are the last resort, elevation/tone instead) */
+  .notes { width:100%; margin-top:12px; background:var(--surface-2); color:var(--ink);
+    border:0; border-radius:9px; padding:9px 12px; font:inherit; font-size:0.875rem; }
+  .notes::placeholder { color:var(--muted); }
+  .notes:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  /* comment row: a slim note field + an icon send button (submit WITHOUT picking an option). */
+  .c-actions { display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .c-actions .notes { flex:1; margin-top:0; }
+  button.cmt { flex-shrink:0; display:grid; place-items:center; width:38px; height:38px; padding:0;
+    background:var(--control); color:var(--muted); border:0; border-radius:9px; cursor:pointer;
+    touch-action:manipulation; transition:background 120ms ease, color 120ms ease; }
+  button.cmt svg { width:18px; height:18px; }
+  button.cmt:hover { background:var(--control-hover); color:var(--accent); }
+  button.cmt:active { background:var(--accent); color:var(--accent-ink); }
+  button.cmt:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* options: compact tonal pills in a wrapping row — not a full-width boxed/stacked control.
+     Tap = submit (mobile fast-triage). */
+  .opts { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  button.opt {
+    flex:1 1 auto; min-width:92px; text-align:center; padding:9px 16px;
+    border:0; border-radius:9px; background:var(--surface-2); color:var(--ink);
+    font:inherit; font-weight:600; font-size:0.875rem; cursor:pointer; touch-action:manipulation;
+    overflow-wrap:break-word; transition:background 120ms ease, color 120ms ease, transform 90ms ease;
+  }
+  button.opt:hover { background:var(--accent-wash); color:var(--accent); }
+  button.opt:active { background:var(--accent); color:var(--accent-ink); transform:scale(.98); }
+  button.opt:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  /* wide screens: pills size to their label instead of stretching across the 640px column */
+  @media (min-width:560px){ button.opt { flex:0 1 auto; min-width:120px; } }
+
+  .empty { text-align:center; color:var(--muted); padding:60px 20px;
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .empty .big { display:block; font-size:var(--fs-title); color:var(--ink); font-weight:700; margin-bottom:4px; }
+  .msg { color:var(--muted); text-align:center; padding:48px 16px; }
+
+  /* login */
+  .login { max-width:360px; margin:16vh auto 0; padding:0 22px; }
+  .login h1 { font-size:1.5rem; font-weight:700; letter-spacing:-.01em; margin:0 0 4px; }
+  .login p.tag { color:var(--muted); font-size:0.875rem; margin:0 0 20px; }
+  .login input { width:100%; padding:12px; font:inherit; background:var(--surface);
+    color:var(--ink); border:0; border-radius:8px; margin:0 0 12px; box-shadow:var(--shadow); }
+  .login input:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  .login button { width:100%; padding:12px; font:inherit; font-weight:700; background:var(--accent);
+    color:var(--accent-ink); border:0; border-radius:8px; cursor:pointer; }
+  .login .err { color:var(--rejected); font-size:0.75rem; min-height:16px; }
+
+  /* ---- search ---- */
+  .searchbox { width:100%; padding:12px 14px; font:inherit; font-size:1rem; background:var(--surface);
+    color:var(--ink); border:0; border-radius:10px; box-shadow:var(--shadow); }
+  .searchbox::placeholder { color:var(--muted); }
+  .searchbox:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  #sresults { display:flex; flex-direction:column; gap:10px; }
+  .s-hint { color:var(--muted); font-size:0.875rem; padding:20px 4px; }
+  .s-count { color:var(--muted); font-size:0.75rem; font-weight:600; margin:4px 2px; }
+  .srow { display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    background:var(--surface); border:0; border-radius:var(--radius); color:var(--ink);
+    padding:13px 16px; cursor:pointer; font:inherit; box-shadow:var(--shadow); }
+  .srow:hover { background:color-mix(in oklch, var(--accent) 5%, var(--surface)); }
+  .srow:active { background:var(--accent-wash); }
+  .s-main { flex:1; min-width:0; }
+  .s-title { font-size:0.9375rem; font-weight:600; letter-spacing:-.006em; overflow-wrap:break-word; }
+  .s-crumb { font-size:0.75rem; color:var(--muted); margin-top:3px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .s-kind { font-size:0.6875rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    padding:1px 7px; border-radius:999px; background:color-mix(in oklch, var(--ink) 8%, var(--surface)); color:var(--muted); }
+  .s-kind.s-brief { background:var(--answered-wash); color:var(--answered); }
+  .s-kind.s-review { background:var(--accent-wash); color:var(--accent); }
+  .s-kind.s-decision { background:color-mix(in oklch, var(--ink) 8%, var(--surface)); color:var(--ink); }
+
+  /* decision structures (in the expandable body) */
+  .tt-wrap { overflow-x:auto; margin-top:6px; }
+  .tt { border-collapse:collapse; font-size:0.8125rem; min-width:100%; }
+  .tt th, .tt td { padding:5px 9px; text-align:center; white-space:nowrap; }
+  .tt thead th { color:var(--muted); font-weight:600; }
+  .tt tbody th { text-align:left; font-weight:600; }
+  .tt tbody tr + tr th, .tt tbody tr + tr td { border-top:1px solid var(--line); }
+  .st { font-size:0.9rem; line-height:1; }
+  .st-sup { color:var(--answered); } .st-against { color:var(--rejected); } .st-neu { color:var(--muted); }
+  .rev { margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+  .door { align-self:flex-start; font-weight:700; font-size:0.8125rem; padding:4px 12px; border-radius:8px; }
+  .door.one { background:var(--rejected-wash); color:var(--rejected); }
+  .door.two { background:var(--answered-wash); color:var(--answered); }
+  .rev-l { display:block; font-size:0.6875rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin-bottom:2px; }
+  .rev-cons ul { margin:2px 0 0; padding-left:18px; }
+  .diff { display:grid; grid-template-columns:1fr; gap:8px; margin-top:6px; }
+  @media (min-width:560px) { .diff { grid-template-columns:1fr 1fr; } }
+  .diff-l { display:block; font-size:0.6875rem; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px; }
+  .diff-before { color:var(--rejected); } .diff-after { color:var(--answered); }
+  .diff pre { margin:0; padding:8px 10px; background:var(--surface-2); border-radius:8px; overflow-x:auto;
+    font-size:0.78rem; line-height:1.45; white-space:pre; }
+  .tree { list-style:none; margin:8px 0 0; padding:0; }
+  .tnode { font-size:0.8125rem; padding:3px 8px; border-radius:6px; margin:2px 0; }
+  .tnode.ts-chosen { background:var(--answered-wash); font-weight:600; }
+  .tnode.ts-pruned { color:var(--muted); text-decoration:line-through; opacity:.7; }
+  .tnode.ts-active { background:var(--surface-2); }
+  .crit-img { max-width:100%; border-radius:8px; margin-top:6px; }
+
+  /* FR-038: answerable cards embedded in a brief */
+  .embeds { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+  .embeds-l { font-size:0.6875rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+  .embed.card { background:var(--surface-2); border-radius:10px; padding:12px; margin:0; box-shadow:none; }
+  .embed-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .embed-t { font-weight:600; font-size:0.9375rem; }
+  .embed-desc { margin-top:6px; }
+  .embed.done { display:flex; align-items:center; gap:8px; background:var(--answered-wash); color:var(--answered);
+    border-radius:10px; padding:10px 12px; font-size:0.9rem; }
+  .embed.done .embed-check svg { width:18px; height:18px; }
+  .embed.done .embed-t { font-weight:600; }
+  .embed-tag { margin-left:auto; font-size:0.6875rem; text-transform:uppercase; letter-spacing:.03em; opacity:.8; }
+  .s-snip { font-size:0.8125rem; color:var(--muted); margin-top:4px; line-height:1.45;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  mark { background:color-mix(in oklch, var(--accent) 28%, transparent); color:inherit; border-radius:3px; padding:0 1px; }
+  @keyframes flashcard { from { box-shadow:0 0 0 2px var(--accent); } to { box-shadow:var(--shadow); } }
+  .card.flash { animation:flashcard 1.4s ease; }
+
+  .toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 22px);
+    transform:translateX(-50%); background:var(--surface-2); color:var(--ink);
+    border-radius:10px; padding:10px 16px; font-size:0.8125rem; font-weight:500; box-shadow:var(--shadow);
+    z-index:20; }
+  .toast-act { display:flex; align-items:center; gap:16px; }
+  .toast-undo { border:0; background:transparent; color:var(--accent); font:inherit; font-weight:700;
+    cursor:pointer; padding:0; }
+
+  /* focus view: a paging bar above a single, already-open card */
+  .focusnav { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:4px; }
+  .focuspos { font-size:0.8125rem; color:var(--muted); font-variant-numeric:tabular-nums; min-width:64px; text-align:center; }
+  .iconbtn[disabled] { opacity:.35; cursor:default; }
+  /* in focus view the card body is shown inline — cap its height and let it scroll internally only if
+     it genuinely overflows, so a normal card fits on screen without page-scrolling.
+     Forced open via CSS (no openCards mutation), so paging never leaks open-state into scroll view. */
+  .focuscard .card .c-body { display:block; max-height:min(52vh, 520px); overflow:auto; }
+  .focuscard .exp[data-act="expand"] { display:none; }
+
+  /* help overlay */
+  .help-scrim { position:fixed; inset:0; z-index:40; background:oklch(0 0 0 / 0.42);
+    display:flex; align-items:flex-end; justify-content:center; }
+  @media (min-width:560px){ .help-scrim { align-items:center; } }
+  .help-panel { background:var(--surface); color:var(--ink); width:100%; max-width:520px;
+    max-height:82vh; overflow:auto; border-radius:16px 16px 0 0; box-shadow:var(--shadow);
+    padding:20px 20px calc(env(safe-area-inset-bottom) + 24px); }
+  @media (min-width:560px){ .help-panel { border-radius:16px; } }
+  .help-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .help-head h2 { font-size:1.25rem; margin:0; flex:1; font-weight:700; }
+  .help-panel h3 { font-size:0.8125rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);
+    margin:16px 0 8px; }
+  .help-row { display:flex; align-items:flex-start; gap:12px; padding:7px 0; }
+  .help-row .hi { flex-shrink:0; display:grid; place-items:center; width:32px; height:32px; border-radius:8px;
+    background:var(--surface-2); color:var(--accent); }
+  .help-row .hi svg { width:18px; height:18px; }
+  .help-row .ht { font-size:0.875rem; line-height:1.45; }
+  .help-row .ht b { font-weight:600; }
+
+  /* ============================================================================
+     INBOX SHELL — email-client layout (scope rail | item list | reader pane).
+     Full function on desktop + phone; one breakpoint at 880px. Panes separate by
+     tone/elevation, not borders (DESIGN); selected row = tonal fill, never an accent bar.
+     ============================================================================ */
+  #app { height:100dvh; display:flex; flex-direction:column; }
+  /* themed scrollbars across every scrolling pane */
+  .rail, .list, .reader, .help-panel, .md-body pre, .tt-wrap { scrollbar-width:thin;
+    scrollbar-color:color-mix(in srgb, var(--muted) 42%, var(--surface)) transparent; }
+  .rail::-webkit-scrollbar, .list::-webkit-scrollbar, .reader::-webkit-scrollbar { width:10px; height:10px; }
+  .rail::-webkit-scrollbar-track, .list::-webkit-scrollbar-track, .reader::-webkit-scrollbar-track { background:transparent; }
+  .rail::-webkit-scrollbar-thumb, .list::-webkit-scrollbar-thumb, .reader::-webkit-scrollbar-thumb {
+    background:color-mix(in srgb, var(--muted) 40%, var(--surface)); border-radius:8px; border:2px solid transparent; background-clip:padding-box; }
+  .rail::-webkit-scrollbar-thumb:hover, .list::-webkit-scrollbar-thumb:hover, .reader::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+
+  header.bar { position:static; }  /* toolbar is a flex item now, not sticky */
+  .shell { flex:1; min-height:0; display:flex; align-items:stretch; }
+
+  /* ---- scope rail (folders): collapsed by default on desktop, drawer on phone ---- */
+  .rail { flex:0 0 244px; background:var(--surface-2); overflow-y:auto; overflow-x:hidden;
+    padding:12px 10px calc(env(safe-area-inset-bottom) + 16px); display:none; }
+  .shell.rail-open .rail { display:block; }
+  .rail-sect { font-size:0.6875rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--muted); margin:14px 8px 6px; }
+  .rail-sect:first-child { margin-top:2px; }
+  .railitem { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0;
+    background:transparent; color:var(--ink); border-radius:9px; padding:9px 11px; cursor:pointer; font:inherit;
+    font-size:0.9rem; touch-action:manipulation; }
+  .railitem:hover { background:color-mix(in oklch, var(--accent) 8%, var(--surface-2)); }
+  .railitem.on { background:var(--accent-wash); color:var(--accent); font-weight:600; }
+  .railitem .ri-ic { flex:none; display:grid; place-items:center; width:22px; height:22px; color:var(--muted); }
+  .railitem.on .ri-ic { color:var(--accent); }
+  .railitem .ri-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .railitem .ri-badge { flex:none; font-size:0.72rem; font-weight:700; color:var(--muted);
+    background:var(--control); border-radius:999px; padding:1px 8px; font-variant-numeric:tabular-nums; }
+  .railitem.on .ri-badge { background:var(--accent); color:var(--accent-ink); }
+  .railitem.sub { padding-left:20px; font-size:0.86rem; }
+  .rail-scrim { display:none; }
+
+  /* ---- item list (the persistent left bar) ---- */
+  .list { flex:0 0 384px; overflow-y:auto; background:var(--surface);
+    padding:8px 8px calc(env(safe-area-inset-bottom) + 24px); }
+  .list-head { display:flex; align-items:center; gap:8px; padding:8px 8px 6px; position:sticky; top:0;
+    background:var(--surface); z-index:2; }
+  .list-title { flex:1; min-width:0; font-size:0.9rem; font-weight:700; letter-spacing:-.006em;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .list-count { font-size:0.75rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .listsearch { box-shadow:none; background:var(--surface-2); padding:9px 12px; font-size:0.88rem;
+    margin:0 6px 8px; width:calc(100% - 12px); }
+  .listrows { display:flex; flex-direction:column; gap:4px; }
+  .listrow { display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left; border:0;
+    background:transparent; color:var(--ink); border-radius:10px; padding:11px 12px; cursor:pointer; font:inherit;
+    touch-action:manipulation; transition:background 120ms ease; }
+  .listrow:hover { background:color-mix(in oklch, var(--accent) 6%, var(--surface)); }
+  .listrow.sel { background:var(--accent-wash); }
+  .listrow .lr-check { flex:none; margin-top:2px; width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+  .listrow .lr-dot { flex:none; width:8px; height:8px; border-radius:50%; margin-top:6px; background:var(--accent); }
+  .listrow.read .lr-dot { background:transparent; }
+  .listrow .lr-main { flex:1; min-width:0; }
+  .listrow .lr-top { display:flex; align-items:center; gap:8px; }
+  .listrow .lr-title { flex:1; min-width:0; font-size:0.9rem; line-height:1.35; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; font-weight:700; color:var(--ink); }
+  .listrow.read .lr-title { font-weight:500; color:var(--muted); }
+  .listrow .lr-date { flex:none; font-size:0.72rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .listrow .lr-crumb { font-size:0.72rem; color:var(--muted); margin-top:2px; display:flex;
+    align-items:center; gap:6px; min-width:0; }
+  .listrow .lr-crumb .lr-proj { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .listrow .lr-snip { font-size:0.8rem; color:var(--muted); margin-top:3px; line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .listrow.sel .lr-title, .listrow.sel .lr-date { color:var(--ink); }
+  .lr-blk { flex:none; width:7px; height:7px; border-radius:50%; background:var(--rejected); margin-top:6px; }
+
+  /* bulk-action bar (appears when ≥1 row selected) */
+  .bulkbar { display:flex; align-items:center; gap:8px; padding:8px 10px; margin:2px 6px 6px;
+    background:var(--pending-wash); border-radius:10px; font-size:0.82rem; font-weight:600; color:var(--accent); }
+  .bulkbar .bb-n { flex:1; }
+  .bulkbar button { border:0; background:var(--control); color:var(--ink); border-radius:8px; padding:6px 11px;
+    font:inherit; font-weight:600; font-size:0.8rem; cursor:pointer; }
+  .bulkbar button:hover { background:var(--control-hover); color:var(--accent); }
+
+  /* ---- reader pane ---- */
+  .reader { flex:1; min-width:0; overflow-y:auto; background:var(--bg);
+    padding:22px 26px calc(env(safe-area-inset-bottom) + 48px); }
+  .reader-back { display:none; }   /* phone only */
+  .reader-inner { max-width:760px; margin:0 auto; }
+  /* the reader reuses the card renderers, always open, flattened (no nested-card chrome) */
+  .reader .card { box-shadow:none; background:transparent; padding:0; }
+  .reader .card .c-body { display:block; }
+  .reader .card.brief .c-body { display:block; }
+  .reader .exp[data-act="expand"] { display:none; }
+  .reader .c-title { font-size:1.4rem; }
+  .reader-empty { display:grid; place-items:center; height:100%; color:var(--muted); text-align:center; padding:40px; }
+  .reader-empty .big { display:block; font-size:1.1rem; color:var(--ink); font-weight:700; margin-bottom:4px; }
+  /* html-format brief rendered in a sandboxed iframe (styled HTML, no script execution) */
+  .brief-frame { width:100%; border:0; border-radius:10px; background:#fff; margin-top:4px; }
+
+  /* toolbar role-grouping: scope/nav left, view controls right */
+  header.bar .h-actions { margin-left:auto; }
+  .scopebtn { display:flex; align-items:center; gap:7px; height:36px; padding:0 12px; border:0; border-radius:9px;
+    background:var(--control); color:var(--ink); font:inherit; font-weight:600; font-size:0.86rem; cursor:pointer;
+    max-width:230px; touch-action:manipulation; }
+  .scopebtn:hover { background:var(--control-hover); }
+  .scopebtn .sb-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .scopebtn svg { width:17px; height:17px; flex:none; color:var(--muted); }
+
+  /* ---- desktop layout (>=880px): rail + list + reader side by side ---- */
+  @media (min-width:880px){
+    .shell.rail-open .reader { border-left:0; }
+  }
+  /* ---- phone layout (<880px): one pane at a time; reader + rail as overlays ---- */
+  @media (max-width:879px){
+    .list { flex:1 1 auto; }
+    .reader { position:fixed; inset:0; z-index:8; transform:translateX(100%);
+      transition:transform .22s ease; padding-top:calc(env(safe-area-inset-top) + 8px); }
+    .shell.reader-open .reader { transform:none; }
+    @media (prefers-reduced-motion: reduce){ .reader { transition:none; } }
+    .reader-back { display:flex; align-items:center; gap:8px; margin:-6px 0 10px; }
+    .reader-back button { display:grid; place-items:center; width:38px; height:38px; border:0; border-radius:9px;
+      background:var(--control); color:var(--ink); cursor:pointer; }
+    .reader-back .rb-title { font-size:0.95rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .rail { position:fixed; inset:0 auto 0 0; z-index:12; transform:translateX(-100%);
+      transition:transform .22s ease; box-shadow:var(--shadow); display:block; }
+    .shell.rail-open .rail { transform:none; }
+    @media (prefers-reduced-motion: reduce){ .rail { transition:none; } }
+    .shell.rail-open .rail-scrim { display:block; position:fixed; inset:0; z-index:11; background:oklch(0 0 0 / 0.42); }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="markdown-it.min.js"></script>
+<script src="search.js"></script>
+<script src="mdtable.js"></script>
+<script>
+const KEY = 'review_secret';
+const SORT_KEY = 'review_sort';
+const THEME_KEY = 'review_theme';
+const app = document.getElementById('app');
+let secret = localStorage.getItem(KEY) || '';
+let sortMode = localStorage.getItem(SORT_KEY) || 'date'; // 'date' | 'az'
+const kindOf = it => it.kind === 'brief' ? 'brief' : it.kind === 'decision' ? 'decision' : 'review';
+const KIND_ICON = { review: 'kReview', decision: 'kDecide', brief: 'kBrief' };
+const KIND_ONE = { review: 'Review', decision: 'Decision', brief: 'Brief' };
+// small themed type badge shown on every card so briefs / reviews / decisions are tellable apart in any list
+const kindBadge = it => `<span class="s-kind s-${kindOf(it)}">${KIND_ONE[kindOf(it)]}</span>`;
+
+/* theme: honor system by default; an explicit toggle persists a data-theme override (matches reviewer) */
+const savedTheme = localStorage.getItem(THEME_KEY);
+if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+function toggleTheme() {
+  const sysDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const cur = document.documentElement.getAttribute('data-theme') || (sysDark ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem(THEME_KEY, next);
+}
+let currentItems = [];
+// Inbox state. scope filters the list; selectedId is the item open in the reader.
+let scope = { kind: 'all' };     // {kind:'all'} | {kind:'type',type} | {kind:'project',project} | {kind:'set',project,set}
+let selectedId = null;           // id of the item open in the reader pane
+let railOpen = false;            // scope rail (desktop) / slide-in drawer (phone)
+let query = '';                  // live search filter over the current list
+let listScroll = 0;              // preserved list scroll position across re-renders
+const selectedIds = new Set();   // bulk multi-select of list rows
+const openCards = new Set();     // ids rendered expanded (the reader forces its item open)
+
+/* Read-state applies to ALL kinds now (email-inbox unread), not just briefs. Persisted locally
+   (per device) and mirrored to the shared store via the id-generic /api/sync?op=read endpoint so it
+   follows across devices; localStorage is the offline cache. */
+const READ_KEY = 'review_reads';
+let readBriefs = new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]'));  // set of read ids (any kind)
+let answeredEmbeds = new Set();   // ids of embedded brief cards already answered (seeded from server)
+const isRead = id => readBriefs.has(id);
+const isPhone = () => matchMedia('(max-width:879px)').matches;
+function setRead(id, read) {
+  if (read) readBriefs.add(id); else readBriefs.delete(id);       // optimistic, local echo
+  localStorage.setItem(READ_KEY, JSON.stringify([...readBriefs]));
+  api('/api/sync?op=read', { method: 'POST', body: JSON.stringify({ id, read }) }).catch(() => {});
+}
+
+/* ---------- tiny inline icons (no dependency) ---------- */
+const ICON = {
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  sync:'<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/>',
+  sortDate:'<path d="M8 4v16"/><path d="M5 17l3 3 3-3"/><path d="M14 6h6"/><path d="M14 11h5"/><path d="M14 16h4"/>',
+  sortAz:'<path d="M8 4v16"/><path d="M5 17l3 3 3-3"/><path d="M14 5h5l-5 6h5"/><path d="M14 20l2.5-6 2.5 6"/><path d="M14.7 18h3.6"/>',
+  chev:'<path d="M9 5l7 7-7 7"/>',
+  caret:'<path d="M5 9l7 7 7-7"/>',
+  archive:'<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/>',
+  read:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  unread:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none"/>',
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  menu:'<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  inbox:'<path d="M3 12h5l2 3h4l2-3h5"/><path d="M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  byProject:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  theme:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18" fill="currentColor" stroke="none"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>',
+  send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>',
+  more:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.1 1-1.1 1.8"/><path d="M12 16.5h.01"/>',
+  viewList:'<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3.5 6h.01"/><path d="M3.5 12h.01"/><path d="M3.5 18h.01"/>',
+  viewCard:'<rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M8.5 9h7"/><path d="M8.5 13h4"/>',
+  close:'<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
+  prev:'<path d="M15 5l-7 7 7 7"/>',
+  next:'<path d="M9 5l7 7-7 7"/>',
+  kReview:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/>',
+  kDecide:'<circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="9" r="2.3"/><path d="M6 8.3v7.4"/><path d="M8.3 6H14a3 3 0 0 1 3 3"/>',
+  kBrief:'<path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2.5V8h5.5"/>',
+};
+const ic = (n) => `<svg viewBox="0 0 24 24">${ICON[n]}</svg>`;
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const linkify = s => s.replace(/(https?:\/\/[^\s<]+)/g, m => {
+  const t = m.match(/[.,;:!?)\]}]+$/);
+  const url = t ? m.slice(0, -t[0].length) : m;
+  return `<a class="link-mono" href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${t ? t[0] : ''}`;
+});
+// bold only + autolink. No _italic_ transform — source citations use underscores as literal separators
+// (e.g. researchgate slugs), and treating them as italic markers mashes the words together.
+const md = s => linkify(esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'));
+
+// Full CommonMark render for description/section/brief bodies. breaks:false is the fix for the
+// "random newlines": hard-wrapped source paragraphs reflow to the container instead of keeping
+// every 80-col newline (which pre-wrap used to preserve). html:false escapes any raw HTML in source.
+const mdit = window.markdownit
+  ? window.markdownit({ html:false, linkify:true, breaks:false, typographer:false })
+  : null;
+// open links in a new tab
+if (mdit) {
+  const dflt = mdit.renderer.rules.link_open || ((t,i,o,e,s)=>s.renderToken(t,i,o));
+  mdit.renderer.rules.link_open = (tokens,idx,opts,env,self) => {
+    tokens[idx].attrSet('target','_blank'); tokens[idx].attrSet('rel','noopener noreferrer');
+    return dflt(tokens,idx,opts,env,self);
+  };
+}
+// unwrapTableRows first: rejoin hard-wrapped table rows so markdown-it parses them (the cad-loop PRD
+// brief wrapped table cells at ~80 cols, which otherwise breaks the whole table).
+const prep = s => (typeof unwrapTableRows === 'function' ? unwrapTableRows(String(s == null ? '' : s)) : String(s == null ? '' : s));
+const renderMd = s => mdit ? mdit.render(prep(s)) : `<p>${md(String(s||''))}</p>`;
+
+function api(path, opts = {}) {
+  return fetch(path, { ...opts,
+    headers: { 'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+}
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());   // one toast at a time — they overlap otherwise
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 1500);
+}
+// toast with an Undo action (5s window)
+function toastUndo(msg, onUndo) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast toast-act';
+  const s = document.createElement('span'); s.textContent = msg;
+  const b = document.createElement('button'); b.className = 'toast-undo'; b.textContent = 'Undo';
+  t.append(s, b); document.body.appendChild(t);
+  const kill = () => t.remove();
+  b.onclick = () => { kill(); onUndo(); };
+  setTimeout(kill, 5000);
+}
+
+// A dismissible sheet explaining what Docket is and what each control does. Icons mirror the real toolbar.
+function showHelp() {
+  if (document.querySelector('.help-scrim')) return;   // one sheet at a time
+  const rows = [
+    ['send', '<b>Docket</b> is your review queue — briefs to read, reviews to approve/reject, and decisions to make, all pushed from the agent. Answer from here and the result flows back.'],
+    ['viewCard', '<b>Focus / scroll view.</b> Scroll shows the whole stack; focus shows one card at a time, opened so you read it without scrolling. Page with the ← → arrows.'],
+    ['byProject', '<b>Group by project or by type.</b> Switch between browsing by project/set and by kind (reviews / decisions / briefs).'],
+    ['search', '<b>Search</b> every item — titles, bodies, projects, tags, filepaths.'],
+    ['more', '<b>Tell me more</b> sends the card back as feedback: it clears from your queue and the agent returns a fuller version.'],
+    ['archive', '<b>Archive</b> clears a card without deciding.'],
+    ['read', '<b>Mark read / unread</b> on briefs — read state syncs across your devices.'],
+    ['sortDate', '<b>Sort</b> by newest or A–Z. <b>Theme</b> toggles light / dark. <b>Sync</b> pulls the latest.'],
+  ];
+  const scrim = document.createElement('div');
+  scrim.className = 'help-scrim';
+  scrim.innerHTML = `<div class="help-panel" role="dialog" aria-label="How Docket works">
+    <div class="help-head"><h2>How Docket works</h2>
+      <button class="iconbtn" data-act="closehelp" aria-label="Close" title="Close">${ic('close')}</button></div>
+    <div class="help-list">${rows.map(([i, t]) =>
+      `<div class="help-row"><span class="hi">${ic(i)}</span><span class="ht">${t}</span></div>`).join('')}</div>
+  </div>`;
+  const close = () => { scrim.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  document.body.style.overflow = 'hidden';   // lock background scroll while the sheet is open
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
+  scrim.querySelector('[data-act="closehelp"]').onclick = close;
+  document.body.appendChild(scrim);
+}
+
+/* ---------- grouping (Project -> Set -> Card) ---------- */
+function classify(it) {
+  const src = it.source || it.type || '';
+  const pj = (it.project || '').trim(), st = (it.set || '').trim();
+  const ci = src.indexOf(':');
+  if (ci >= 0) return { project: pj || src.slice(0, ci).trim() || 'Ungrouped', set: st || src.slice(ci + 1).trim() || null };
+  return { project: pj || src || 'Ungrouped', set: st || null };
+}
+const oldestOf = cards => cards.reduce((m, c) => { const s = String(c.submitted_at || ''); return (!m || s < m) ? s : m; }, '');
+const newestOf = cards => cards.reduce((m, c) => { const s = String(c.submitted_at || ''); return s > m ? s : m; }, '');
+// short absolute date for the "updated" line on project/set rows, e.g. "Jul 21"
+function fmtShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+const bySort = (a, b) => sortMode === 'az'
+  ? a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+  : String(a.oldest).localeCompare(String(b.oldest));
+const byDate = (a, b) => String(a.submitted_at).localeCompare(String(b.submitted_at));
+
+function tree(items) {
+  const projects = new Map();
+  for (const it of items) {
+    const { project, set } = classify(it);
+    if (!projects.has(project)) projects.set(project, { name: project, direct: [], sets: new Map() });
+    const P = projects.get(project);
+    if (set) { if (!P.sets.has(set)) P.sets.set(set, []); P.sets.get(set).push(it); }
+    else P.direct.push(it);
+  }
+  const out = [...projects.values()].map(P => {
+    const all = [...P.direct, ...[...P.sets.values()].flat()];
+    const sets = [...P.sets.entries()]
+      .map(([name, cards]) => ({ name, cards: [...cards].sort(byDate), oldest: oldestOf(cards), newest: newestOf(cards) })).sort(bySort);
+    return { name: P.name, count: all.length, oldest: oldestOf(all), newest: newestOf(all), direct: [...P.direct].sort(byDate), sets };
+  });
+  return out.sort(bySort);
+}
+
+/* ---------- card rendering ---------- */
+function fmtDate(it) {
+  const d = it.published || '';
+  if (d) return esc(String(d));
+  return '';
+}
+// shared "Tell me more" button for review + decision cards; submitting it clears the card (it comes back fuller)
+function moreBtn(it) {
+  return `<button class="exp" data-act="more" aria-label="Tell me more" title="Tell me more — resend as feedback to have the agent expand this card">${ic('more')}</button>`;
+}
+function cardHTML(it) {
+  if (it.kind === 'brief') return briefHTML(it);
+  if (it.kind === 'decision') return decisionHTML(it);
+  const opts = (it.options && it.options.length ? it.options : ['Approve','Reject']);
+  const open = openCards.has(it.id);
+  const date = fmtDate(it);
+  const tags = (it.tags || []).filter(t => t && t.text && !/^confidence:/i.test(t.text))
+    .slice(0, 3).map(t => `<span class="chip-tag">${esc(t.text)}</span>`).join('');
+  const meta = [
+    kindBadge(it),
+    it.blocking ? '<span class="blk">● blocking</span>' : '',
+    date ? `<span class="c-date">${date}</span>` : '',
+    tags,
+  ].filter(Boolean).join('');
+  const secs = (it.sections || []).map(s =>
+    `<div class="sec"><span class="sec-l">${esc(s.label||'')}</span><div class="sec-t md-body">${renderMd(s.text||'')}</div></div>`).join('');
+  const hasDetail = !!(it.description || (it.sections && it.sections.length));
+  return `<div class="card${open ? ' open' : ''}" data-id="${esc(it.id)}">
+    <div class="c-head">
+      <div class="c-title">${esc(it.title || it.id)}</div>
+      ${moreBtn(it)}
+      <button class="exp arch" data-act="archive" aria-label="Archive (clear without deciding)" title="Archive without deciding">${ic('archive')}</button>
+      ${hasDetail ? `<button class="exp" data-act="expand" aria-label="Show details" title="Expand details">${ic('caret')}</button>` : ''}
+    </div>
+    ${meta ? `<div class="c-meta">${meta}</div>` : ''}
+    <div class="opts">${opts.map(o => `<button class="opt" data-opt="${esc(o)}" title="Submit: ${esc(o)}">${esc(o)}</button>`).join('')}</div>
+    <div class="c-actions">
+      <input class="notes" placeholder="comment (optional)">
+      <button class="cmt" data-act="comment" title="Submit a comment without picking an option">${ic('send')}</button>
+    </div>
+    ${hasDetail ? `<div class="c-body">
+      ${it.description ? `<div class="md-body">${renderMd(it.description)}</div>` : ''}
+      ${secs}
+    </div>` : ''}
+  </div>`;
+}
+
+// Brief body renderer. Markdown (default) goes through markdown-it. An HTML-format brief (FR-009)
+// renders inside a sandboxed iframe — styled HTML displays, but no script runs (sandbox omits
+// allow-scripts); allow-same-origin lets the parent size it to content. base target=_blank so links
+// open in a new tab, not inside the frame.
+function briefBody(it) {
+  if (!it.body) return '';
+  if (String(it.format || '').toLowerCase() === 'html') {
+    const doc = `<!doctype html><html><head><meta charset="utf-8">`
+      + `<meta name="viewport" content="width=device-width, initial-scale=1"><base target="_blank">`
+      + `<style>:root{color-scheme:light}html{-webkit-text-size-adjust:100%}`
+      + `body{margin:0;padding:16px;font:15px/1.55 'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#22203a;max-width:72ch}`
+      + `img,video,table{max-width:100%}table{border-collapse:collapse}th,td{border:1px solid #ccc;padding:4px 9px}`
+      + `pre{overflow:auto;background:#f4f2f9;padding:10px 12px;border-radius:8px}a{color:#4b3fd6}</style></head>`
+      + `<body>${it.body}</body></html>`;
+    return `<iframe class="brief-frame" scrolling="no" referrerpolicy="no-referrer"`
+      + ` sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"`
+      + ` onload="try{this.style.height=(this.contentWindow.document.documentElement.scrollHeight+4)+'px'}catch(e){}"`
+      + ` srcdoc="${esc(doc)}"></iframe>`;
+  }
+  return `<div class="md-body">${renderMd(it.body)}</div>`;
+}
+
+// A brief renders as a read-only reading card: no options, a formatted body, a copyable filepath,
+// and a read/unread toggle (unread = accent dot + bold title; read = muted). Archive still clears it.
+function briefHTML(it) {
+  const open = openCards.has(it.id);
+  const isRead = readBriefs.has(it.id);
+  const date = fmtDate(it);
+  const fp = it.filepath || it.src || '';
+  const tags = (it.tags || []).filter(t => t && t.text && !/^confidence:/i.test(t.text))
+    .slice(0, 3).map(t => `<span class="chip-tag">${esc(t.text)}</span>`).join('');
+  const meta = [
+    kindBadge(it),
+    it.blocking ? '<span class="blk">● blocking</span>' : '',
+    date ? `<span class="c-date">${date}</span>` : '',
+    tags,
+  ].filter(Boolean).join('');
+  const body = briefBody(it);
+  return `<div class="card brief${open ? ' open' : ''}${isRead ? ' is-read' : ' unread'}" data-id="${esc(it.id)}" data-kind="brief">
+    <div class="c-head">
+      ${isRead ? '' : '<span class="unread-dot" aria-hidden="true"></span>'}
+      <div class="c-title">${esc(it.title || it.id)}</div>
+      <button class="exp rtog" data-act="read" aria-label="${isRead ? 'Mark unread' : 'Mark read'}" title="${isRead ? 'Mark unread' : 'Mark read'}">${ic(isRead ? 'unread' : 'read')}</button>
+      <button class="exp arch" data-act="archive" aria-label="Archive" title="Archive">${ic('archive')}</button>
+      ${body ? `<button class="exp" data-act="expand" aria-label="Read">${ic('caret')}</button>` : ''}
+    </div>
+    ${meta ? `<div class="c-meta">${meta}</div>` : ''}
+    ${fp ? `<div class="fp-row"><code class="fp" title="${esc(fp)}">${esc(fp)}</code>
+      <button class="fp-copy" data-act="copyfp" data-fp="${esc(fp)}" aria-label="Copy filepath" title="Copy filepath">${ic('copy')}</button></div>` : ''}
+    ${body ? `<div class="c-body">${body}</div>` : ''}
+    ${Array.isArray(it.embeds) && it.embeds.length
+      ? `<div class="embeds"><div class="embeds-l">Respond</div>${it.embeds.map(embedHTML).join('')}</div>` : ''}
+  </div>`;
+}
+
+// A decision renders like a review (options + comment + submit) but with a type-specific STRUCTURE in
+// the expandable body — a tradeoff matrix, a reversibility door badge, a before/after diff, a reasoning
+// tree, or a critique artifact. option-select is a plain review with no extra structure.
+function optLabel(o) { return typeof o === 'string' ? o : (o && (o.label || o.id)) || ''; }
+function stanceMark(s) {
+  if (s === 'supports') return '<span class="st st-sup" title="supports">▲</span>';
+  if (s === 'against') return '<span class="st st-against" title="against">▼</span>';
+  return '<span class="st st-neu" title="neutral">●</span>';
+}
+function tradeoffTable(it) {
+  const opts = it.options || [], crit = it.criteria || [], cells = it.cells || [];
+  if (!opts.length || !crit.length) return '';
+  const cellFor = (oid, cid) => cells.find(c => c.option === oid && c.criterion === cid);
+  return `<div class="tt-wrap"><table class="tt">
+    <thead><tr><th></th>${crit.map(c => `<th>${esc(c.label || c.id)}</th>`).join('')}</tr></thead>
+    <tbody>${opts.map(o => `<tr><th>${esc(o.label || o.id)}</th>${crit.map(c => {
+      const cell = cellFor(o.id, c.id);
+      return `<td title="${cell ? esc(cell.note || cell.stance || '') : ''}">${cell ? stanceMark(cell.stance) : '<span class="st st-neu">·</span>'}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function reversibilityBody(it) {
+  const oneWay = it.door === 'one-way';
+  return `<div class="rev">
+    <div class="door ${oneWay ? 'one' : 'two'}">${oneWay ? '⤺ One-way door' : '⇄ Two-way door'}</div>
+    ${it.cost_to_reverse ? `<div class="rev-cost"><span class="rev-l">Cost to reverse</span> ${esc(it.cost_to_reverse)}</div>` : ''}
+    ${(it.consequences || []).length ? `<div class="rev-cons"><span class="rev-l">If wrong</span><ul>${it.consequences.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>` : ''}
+  </div>`;
+}
+function diffBody(it) {
+  return `<div class="diff">
+    <div class="diff-col"><span class="diff-l diff-before">Before</span><pre>${esc(it.before || '')}</pre></div>
+    <div class="diff-col"><span class="diff-l diff-after">After</span><pre>${esc(it.after || '')}</pre></div>
+  </div>`;
+}
+function treeBody(it) {
+  const nodes = it.nodes || [];
+  if (!nodes.length) return '';
+  const byId = {}; nodes.forEach(n => byId[n.id] = n);
+  const depth = n => { let d = 0, p = n.parent; while (p && byId[p]) { d++; p = byId[p].parent; } return d; };
+  return `<ul class="tree">${nodes.map(n => `<li class="tnode ts-${esc(n.status || 'active')}" style="margin-left:${depth(n) * 16}px">${esc(n.label || n.id)}</li>`).join('')}</ul>`;
+}
+function critiqueBody(it) {
+  const a = it.artifact || {};
+  const imageSrc = a.content || (a.ref ? `/api/artifact?ref=${encodeURIComponent(a.ref)}` : '');
+  if (a.kind === 'image') return `<img class="crit-img" src="${esc(imageSrc)}" alt="artifact">`;
+  return `<div class="md-body">${renderMd(a.content || '')}</div>`;
+}
+function decisionBody(it) {
+  switch (it.type) {
+    case 'tradeoff': return tradeoffTable(it);
+    case 'reversibility': return reversibilityBody(it);
+    case 'diff': return diffBody(it);
+    case 'reasoning-tree': return treeBody(it);
+    case 'critique': return critiqueBody(it);
+    default: return '';
+  }
+}
+function decisionHTML(it) {
+  const opts = (it.options && it.options.length ? it.options : ['Approve', 'Reject']);
+  const open = openCards.has(it.id);
+  const date = fmtDate(it);
+  const tags = (it.tags || []).filter(t => t && t.text && !/^confidence:/i.test(t.text))
+    .slice(0, 3).map(t => `<span class="chip-tag">${esc(t.text)}</span>`).join('');
+  const typeLabel = (it.type && it.type !== 'option-select') ? `<span class="s-kind s-decision">${esc(it.type)}</span>` : '';
+  const meta = [
+    kindBadge(it),
+    it.blocking ? '<span class="blk">● blocking</span>' : '',
+    typeLabel,
+    date ? `<span class="c-date">${date}</span>` : '',
+    tags,
+  ].filter(Boolean).join('');
+  const struct = decisionBody(it);
+  const hasDetail = !!(it.description || struct);
+  return `<div class="card decision${open ? ' open' : ''}" data-id="${esc(it.id)}" data-kind="decision">
+    <div class="c-head">
+      <div class="c-title">${esc(it.title || it.id)}</div>
+      ${moreBtn(it)}
+      <button class="exp arch" data-act="archive" aria-label="Archive (clear without deciding)" title="Archive without deciding">${ic('archive')}</button>
+      ${hasDetail ? `<button class="exp" data-act="expand" aria-label="Show details" title="Expand details">${ic('caret')}</button>` : ''}
+    </div>
+    ${meta ? `<div class="c-meta">${meta}</div>` : ''}
+    <div class="opts">${opts.map(o => `<button class="opt" data-opt="${esc(optLabel(o))}" title="Submit: ${esc(optLabel(o))}">${esc(optLabel(o))}</button>`).join('')}</div>
+    <div class="c-actions">
+      <input class="notes" placeholder="comment (optional)">
+      <button class="cmt" data-act="comment" title="Submit a comment without picking an option">${ic('send')}</button>
+    </div>
+    ${hasDetail ? `<div class="c-body">
+      ${it.description ? `<div class="md-body">${renderMd(it.description)}</div>` : ''}
+      ${struct}
+    </div>` : ''}
+  </div>`;
+}
+
+// FR-038: an embedded card inside a brief — a compact, answerable review or decision. Reuses the shared
+// .opt/.cmt handlers (data-embed=1 tells submitCard to mark it answered in place, not remove the brief).
+function embedHTML(embed) {
+  const id = embed.id || '';
+  if (answeredEmbeds.has(id)) {
+    return `<div class="embed done" data-id="${esc(id)}"><span class="embed-check">${ic('read')}</span>
+      <span class="embed-t">${esc(embed.title || id)}</span><span class="embed-tag">answered</span></div>`;
+  }
+  const opts = (embed.options && embed.options.length ? embed.options : ['Approve', 'Reject']);
+  const struct = embed.kind === 'decision' ? decisionBody(embed) : '';
+  const typeTag = (embed.kind === 'decision' && embed.type && embed.type !== 'option-select')
+    ? `<span class="s-kind s-decision">${esc(embed.type)}</span>` : '';
+  return `<div class="embed card" data-id="${esc(id)}" data-embed="1">
+    <div class="embed-head"><span class="embed-t">${esc(embed.title || id)}</span>${typeTag}</div>
+    ${embed.description ? `<div class="md-body embed-desc">${renderMd(embed.description)}</div>` : ''}
+    ${struct}
+    <div class="opts">${opts.map(o => `<button class="opt" data-opt="${esc(optLabel(o))}" title="Submit: ${esc(optLabel(o))}">${esc(optLabel(o))}</button>`).join('')}</div>
+    <div class="c-actions">
+      <input class="notes" placeholder="comment (optional)">
+      <button class="cmt" data-act="comment" title="Submit a comment without picking an option">${ic('send')}</button>
+    </div>
+  </div>`;
+}
+
+
+function render() {
+  if (!secret) { loginView(); return; }
+  const l = document.querySelector('.list'); if (l) listScroll = l.scrollTop;   // preserve list scroll
+  if (!currentItems.length) {
+    app.innerHTML = toolbarHTML() +
+      `<div class="shell"><div class="reader"><div class="reader-empty"><span class="big">All clear</span>Nothing left to review.</div></div></div>`;
+    wireApp(); return;
+  }
+  renderApp();
+  const l2 = document.querySelector('.list'); if (l2) l2.scrollTop = listScroll;
+}
+
+/* ---------- inbox: scope → list → reader ---------- */
+function scopeFilter(it) {
+  if (scope.kind === 'type') return kindOf(it) === scope.type;
+  if (scope.kind === 'project' || scope.kind === 'set') {
+    const { project, set } = classify(it);
+    if (project !== scope.project) return false;
+    return scope.kind === 'project' ? true : set === scope.set;
+  }
+  return true; // 'all'
+}
+function scopeItems() {
+  let list = currentItems.filter(scopeFilter);
+  if (query.trim() && typeof searchItems === 'function') {
+    list = searchItems(list, query).map(r => r.item);
+  } else {
+    list = list.slice().sort(sortMode === 'az'
+      ? (a, b) => String(a.title || '').toLowerCase().localeCompare(String(b.title || '').toLowerCase())
+      : byDate);
+  }
+  return list;
+}
+function scopeTitle() {
+  if (scope.kind === 'type') return KIND_LABEL[scope.type];
+  if (scope.kind === 'project') return scope.project;
+  if (scope.kind === 'set') return scope.set;
+  return 'All items';
+}
+
+function toolbarHTML() {
+  const canRename = (scope.kind === 'project' || scope.kind === 'set');
+  return `<header class="bar">
+    <button class="iconbtn" data-act="rail" aria-label="Browse" title="Projects & types">${ic('menu')}</button>
+    <button class="scopebtn" data-act="rail" title="Current view — tap to change">
+      <span class="sb-name">${esc(scopeTitle())}</span>${ic('caret')}</button>
+    <div class="h-actions">
+      ${canRename ? `<button class="iconbtn" data-act="rename" aria-label="Rename" title="Rename this ${scope.kind}">${ic('edit')}</button>` : ''}
+      <button class="iconbtn" data-act="sort" aria-label="Sort" title="Sort: ${sortMode === 'date' ? 'newest first — switch to A–Z' : 'A–Z — switch to newest'}">${ic(sortMode === 'date' ? 'sortDate' : 'sortAz')}</button>
+      <button class="iconbtn" data-act="theme" aria-label="Theme" title="Toggle light / dark">${ic('theme')}</button>
+      <button class="iconbtn" id="sync" data-act="sync" aria-label="Sync" title="Sync — pull latest">${ic('sync')}</button>
+      <button class="iconbtn" data-act="help" aria-label="Help" title="How Docket works">${ic('help')}</button>
+    </div>
+  </header>`;
+}
+
+function railHTML() {
+  const counts = { review: 0, decision: 0, brief: 0 };
+  currentItems.forEach(it => counts[kindOf(it)]++);
+  const projects = tree(currentItems);
+  const item = (on, cls, act, data, icon, name, badge) =>
+    `<button class="railitem${cls ? ' ' + cls : ''}${on ? ' on' : ''}" data-act="${act}" ${data}>
+      <span class="ri-ic">${ic(icon)}</span><span class="ri-name">${esc(name)}</span>${badge != null ? `<span class="ri-badge">${badge}</span>` : ''}</button>`;
+  const typeRows = ['review', 'decision', 'brief'].filter(k => counts[k]).map(k =>
+    item(scope.kind === 'type' && scope.type === k, '', 'sc-type', `data-type="${k}"`, KIND_ICON[k], KIND_LABEL[k], counts[k])).join('');
+  const projRows = projects.map(p => {
+    const on = scope.kind === 'project' && scope.project === p.name;
+    const expanded = on || (scope.kind === 'set' && scope.project === p.name);
+    const sets = expanded ? p.sets.map(s =>
+      item(scope.kind === 'set' && scope.project === p.name && scope.set === s.name, 'sub', 'sc-set',
+        `data-project="${esc(p.name)}" data-set="${esc(s.name)}"`, 'byProject', s.name, s.cards.length)).join('') : '';
+    return item(on, '', 'sc-project', `data-project="${esc(p.name)}"`, 'byProject', p.name, p.count) + sets;
+  }).join('');
+  return `<nav class="rail">
+    <div class="rail-sect">Inbox</div>
+    ${item(scope.kind === 'all', '', 'sc-all', '', 'inbox', 'All items', currentItems.length)}
+    <div class="rail-sect">By type</div>${typeRows}
+    <div class="rail-sect">Projects</div>${projRows || '<div class="railitem" style="color:var(--muted)">None</div>'}
+  </nav><div class="rail-scrim" data-act="rail"></div>`;
+}
+
+function snip(it) {
+  const text = it.description || it.body || (it.sections || []).map(s => s.text || '').join(' ') || '';
+  if (!text) return '';
+  const clean = text.replace(/```[\s\S]*?```/g, ' ').replace(/[#>*`_|]/g, '').replace(/\s+/g, ' ').trim();
+  return clean ? `<div class="lr-snip">${esc(clean.slice(0, 160))}</div>` : '';
+}
+function listRowHTML(it) {
+  const k = kindOf(it);
+  const { project, set } = classify(it);
+  const crumb = [project, set].filter(Boolean).map(esc).join(' › ');
+  const read = isRead(it.id), sel = selectedIds.has(it.id), open = it.id === selectedId;
+  const date = fmtShort(it.submitted_at) || esc(fmtDate(it));
+  return `<div class="listrow${read ? ' read' : ''}${open ? ' sel' : ''}" data-id="${esc(it.id)}" role="button" tabindex="0">
+    <input type="checkbox" class="lr-check" data-act="check" ${sel ? 'checked' : ''} aria-label="Select" onclick="event.stopPropagation()">
+    <span class="lr-dot" aria-hidden="true"></span>
+    <div class="lr-main">
+      <div class="lr-top"><div class="lr-title">${esc(it.title || it.id)}</div><span class="lr-date">${date}</span></div>
+      <div class="lr-crumb"><span class="s-kind s-${k}">${KIND_ONE[k]}</span>${crumb ? `<span class="lr-proj">${crumb}</span>` : ''}${it.blocking ? '<span class="lr-blk" title="blocking"></span>' : ''}</div>
+      ${snip(it)}
+    </div>
+  </div>`;
+}
+function listHTML() {
+  const items = scopeItems();
+  const nSel = selectedIds.size;
+  const bulk = nSel ? `<div class="bulkbar"><span class="bb-n">${nSel} selected</span>
+    <button data-act="bulk-read">Mark read</button><button data-act="bulk-archive">Archive</button>
+    <button data-act="bulk-clear">Clear</button></div>` : '';
+  const rows = items.length ? items.map(listRowHTML).join('') : `<div class="msg">Nothing here.</div>`;
+  return `<div class="list">
+    <div class="list-head"><div class="list-title">${esc(scopeTitle())}</div><span class="list-count">${items.length}</span></div>
+    <input class="searchbox listsearch" type="search" enterkeyhint="search" autocomplete="off" placeholder="Search ${items.length} item${items.length === 1 ? '' : 's'}…" value="${esc(query)}">
+    ${bulk}
+    <div class="listrows">${rows}</div>
+  </div>`;
+}
+function readerHTML() {
+  const it = currentItems.find(x => x.id === selectedId);
+  if (!it) return `<div class="reader"><div class="reader-empty"><span class="big">No item open</span>Pick something from the list to read and triage.</div></div>`;
+  openCards.add(it.id);
+  const back = `<div class="reader-back"><button data-act="reader-back" aria-label="Back to list" title="Back">${ic('back')}</button><span class="rb-title">${esc(it.title || it.id)}</span></div>`;
+  return `<div class="reader"><div class="reader-inner">${back}${cardHTML(it)}</div></div>`;
+}
+function renderApp() {
+  const cls = `shell${railOpen ? ' rail-open' : ''}${selectedId && isPhone() ? ' reader-open' : ''}`;
+  app.innerHTML = toolbarHTML() + `<div class="${cls}">${railHTML()}${listHTML()}${readerHTML()}</div>`;
+  wireApp();
+}
+
+/* ---------- inbox wiring ---------- */
+function setScope(s) { scope = s; selectedIds.clear(); if (isPhone()) railOpen = false; render(); }
+function selectItem(id, fromKey) {
+  selectedId = id;
+  if (!isRead(id)) setRead(id, true);   // auto-mark read on deliberate open
+  render();
+  const rd = app.querySelector('.reader'); if (rd && !fromKey) rd.scrollTop = 0;
+  if (fromKey && !isPhone()) { const r = app.querySelector('.listrow.sel'); if (r) r.scrollIntoView({ block: 'nearest' }); }
+}
+function wireApp() {
+  app.querySelectorAll('header.bar [data-act]').forEach(b => {
+    const act = b.dataset.act;
+    if (act === 'rail') b.onclick = () => { railOpen = !railOpen; render(); };
+    else if (act === 'sort') b.onclick = () => { sortMode = sortMode === 'date' ? 'az' : 'date'; localStorage.setItem(SORT_KEY, sortMode); render(); };
+    else if (act === 'theme') b.onclick = toggleTheme;
+    else if (act === 'sync') b.onclick = () => { b.classList.add('spin'); load(); };
+    else if (act === 'help') b.onclick = showHelp;
+    else if (act === 'rename') b.onclick = renameScope;
+  });
+  app.querySelectorAll('.rail [data-act]').forEach(b => {
+    const act = b.dataset.act;
+    if (act === 'sc-all') b.onclick = () => setScope({ kind: 'all' });
+    else if (act === 'sc-type') b.onclick = () => setScope({ kind: 'type', type: b.dataset.type });
+    else if (act === 'sc-project') b.onclick = () => setScope({ kind: 'project', project: b.dataset.project });
+    else if (act === 'sc-set') b.onclick = () => setScope({ kind: 'set', project: b.dataset.project, set: b.dataset.set });
+  });
+  const scrim = app.querySelector('.rail-scrim'); if (scrim) scrim.onclick = () => { railOpen = false; render(); };
+  const q = app.querySelector('.listsearch');
+  if (q) {
+    q.oninput = () => {
+      query = q.value;
+      const box = app.querySelector('.listrows');
+      if (box) { box.innerHTML = scopeItems().map(listRowHTML).join('') || '<div class="msg">Nothing here.</div>'; wireRows(); }
+      const c = app.querySelector('.list-count'); if (c) c.textContent = scopeItems().length;
+    };
+    q.onkeydown = e => { if (e.key === 'Escape') { q.value = ''; query = ''; render(); } };
+  }
+  wireRows();
+  const bb = app.querySelector('.bulkbar');
+  if (bb) bb.querySelectorAll('[data-act]').forEach(b => {
+    const act = b.dataset.act;
+    if (act === 'bulk-clear') b.onclick = () => { selectedIds.clear(); render(); };
+    else if (act === 'bulk-read') b.onclick = () => { selectedIds.forEach(id => setRead(id, true)); selectedIds.clear(); render(); };
+    else if (act === 'bulk-archive') b.onclick = bulkArchive;
+  });
+  const rbk = app.querySelector('[data-act="reader-back"]'); if (rbk) rbk.onclick = () => { selectedId = null; render(); };
+  // reuse the card renderers' own action handlers inside the reader
+  app.querySelectorAll('.exp[data-act="archive"]').forEach(b => b.onclick = onArchive);
+  app.querySelectorAll('.exp[data-act="read"]').forEach(b => b.onclick = onToggleRead);
+  app.querySelectorAll('[data-act="copyfp"]').forEach(b => b.onclick = onCopyFilepath);
+  app.querySelectorAll('button.opt').forEach(b => b.onclick = onChoose);
+  app.querySelectorAll('button.cmt').forEach(b => b.onclick = onComment);
+  app.querySelectorAll('.exp[data-act="more"]').forEach(b => b.onclick = onMore);
+}
+function wireRows() {
+  app.querySelectorAll('.listrow').forEach(r => {
+    const id = r.dataset.id;
+    r.onclick = () => selectItem(id);
+    r.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectItem(id); } };
+    const cb = r.querySelector('.lr-check');
+    if (cb) cb.onchange = () => { if (cb.checked) selectedIds.add(id); else selectedIds.delete(id); render(); };
+  });
+}
+async function bulkArchive() {
+  const ids = [...selectedIds]; selectedIds.clear();
+  for (const id of ids) { try { await api('/api/submit', { method: 'POST', body: JSON.stringify({ id, archived: true }) }); } catch {} }
+  currentItems = currentItems.filter(it => !ids.includes(it.id));
+  ids.forEach(id => { openCards.delete(id); if (selectedId === id) selectedId = null; });
+  toast(`Archived ${ids.length}`); render();
+}
+async function renameScope() {
+  const isSet = scope.kind === 'set';
+  const cur = isSet ? scope.set : scope.project;
+  if (!cur) return;
+  const name = prompt(`Rename ${isSet ? 'set' : 'project'} “${cur}” to:`, cur);
+  if (name == null) return;
+  const next = name.trim(); if (!next || next === cur) return;
+  const spec = isSet ? { project: scope.project, set: scope.set, toSet: next } : { project: scope.project, toProject: next };
+  try {
+    const r = await api('/api/sync?op=rename', { method: 'POST', body: JSON.stringify(spec) });
+    if (!r.ok) throw new Error(await r.text());
+    const { changed } = await r.json();
+    toast(`Renamed — ${changed} card${changed === 1 ? '' : 's'}`);
+    scope = isSet ? { kind: 'set', project: scope.project, set: next } : { kind: 'project', project: next };
+    await load();
+  } catch { toast('Rename failed'); }
+}
+// global keyboard triage (desktop): j/k move · Enter open · e archive · u toggle read
+if (!window.__docketKeys) {
+  window.__docketKeys = true;
+  document.addEventListener('keydown', (e) => {
+    if (!currentItems.length || !secret) return;
+    const tag = (e.target && e.target.tagName) || '';
+    if (/INPUT|TEXTAREA|SELECT/.test(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    const list = scopeItems();
+    if (!list.length) return;
+    const idx = list.findIndex(x => x.id === selectedId);
+    if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); const n = list[Math.min(idx < 0 ? 0 : idx + 1, list.length - 1)]; if (n) selectItem(n.id, true); }
+    else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); const n = list[Math.max((idx < 0 ? 0 : idx) - 1, 0)]; if (n) selectItem(n.id, true); }
+    else if (e.key === 'e' && selectedId) { const btn = app.querySelector('.reader .exp[data-act="archive"]'); if (btn) btn.click(); }
+    else if (e.key === 'u' && selectedId) { setRead(selectedId, !isRead(selectedId)); render(); }
+    else if (e.key === 'Escape' && isPhone() && selectedId) { selectedId = null; render(); }
+  });
+}
+
+
+const KIND_LABEL = { review: 'Reviews', decision: 'Decisions', brief: 'Briefs' };
+
+
+
+
+
+// A project opens to a MENU: the three data types (briefs / reviews / decisions) as distinct entries,
+// then its sets. Tapping a type shows just that type's cards; tapping a set shows that set (all types).
+
+// One data type within a project — the "view briefs / reviews / decisions the same way" list.
+
+
+// Rename the project or set currently in view — writes canonical project/set fields onto every
+// matching card via the store (also de-dups source-only grouping). Prompt-driven; reloads after.
+
+/* ---------- wiring ---------- */
+
+async function onMore(e) {
+  e.stopPropagation();
+  const btn = e.currentTarget, card = btn.closest('.card');
+  const id = card.dataset.id;
+  const noteEl = card.querySelector('.notes');
+  const notes = noteEl ? noteEl.value || '' : '';
+  btn.disabled = true;
+  try {
+    // "Tell me more" is feedback like any other: submit it, the card clears from the board, and the
+    // agent remakes it fuller (as a new card). action:'more' distinguishes it in the pulled results.
+    const r = await api('/api/submit', { method:'POST', body: JSON.stringify({ id, action:'more', notes }) });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    toast('Asked for more — it\'ll come back expanded');
+    clearCard(id);
+  } catch (err) {
+    btn.disabled = false;
+    toast('Failed: ' + err.message);
+  }
+}
+
+// Remove a resolved card from state and re-render, stepping up a level if its set/project emptied.
+function clearCard(id) {
+  const list = scopeItems();
+  const idx = list.findIndex(x => x.id === id);
+  currentItems = currentItems.filter(it => it.id !== id);
+  openCards.delete(id); selectedIds.delete(id);
+  if (selectedId === id) {
+    if (isPhone()) selectedId = null;                         // back to the list on phone
+    else { const rest = scopeItems(); selectedId = rest.length ? (rest[Math.min(idx, rest.length - 1)] || rest[0]).id : null; }
+  }
+  render();
+}
+
+// Shared submit: POST the body, clear the card on success, restore the card on failure.
+async function submitCard(card, body, okToast) {
+  card.style.opacity = '0.4';
+  card.querySelectorAll('button,textarea,input').forEach(el => el.disabled = true);
+  try {
+    const r = await api('/api/submit', { method:'POST', body: JSON.stringify(body) });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    toast(okToast);
+    // an embedded brief card (FR-038) is answered in place — mark it and keep the parent brief.
+    // Re-render loses scroll inside a long brief, so restore it.
+    if (card.dataset.embed) {
+      answeredEmbeds.add(card.dataset.id);
+      const y = window.scrollY; render(); window.scrollTo(0, y);
+    }
+    else clearCard(card.dataset.id);
+  } catch (err) {
+    card.style.opacity = '1';
+    card.querySelectorAll('button,textarea,input').forEach(el => el.disabled = false);
+    toast('Failed: ' + err.message);
+  }
+}
+
+// Archive with an undo window (research: undo-with-toast over a confirm modal). The card leaves the
+// board optimistically; the server POST is deferred ~5s so "Undo" can restore it without any un-archive
+// endpoint. A second archive (or load/unload) flushes the prior pending one first.
+let pendingArchive = null;   // { it, timer }
+function flushPendingArchive() {
+  if (!pendingArchive) return;
+  const id = pendingArchive.it.id; clearTimeout(pendingArchive.timer); pendingArchive = null;
+  api('/api/submit', { method: 'POST', body: JSON.stringify({ id, archived: true }) }).catch(() => {});
+}
+function archiveCard(id) {
+  const it = currentItems.find(x => x.id === id); if (!it) return;
+  flushPendingArchive();
+  const idx = scopeItems().findIndex(x => x.id === id);
+  currentItems = currentItems.filter(x => x.id !== id);
+  openCards.delete(id); selectedIds.delete(id);
+  if (selectedId === id) {
+    if (isPhone()) selectedId = null;
+    else { const rest = scopeItems(); selectedId = rest.length ? (rest[Math.min(idx, rest.length - 1)] || rest[0]).id : null; }
+  }
+  const timer = setTimeout(() => { pendingArchive = null;
+    api('/api/submit', { method: 'POST', body: JSON.stringify({ id, archived: true }) }).catch(() => {}); }, 5000);
+  pendingArchive = { it, timer };
+  render();
+  toastUndo('Archived', () => { clearTimeout(timer); pendingArchive = null; currentItems.push(it); selectedId = id; render(); });
+}
+function onArchive(e) {
+  e.stopPropagation();
+  const card = e.currentTarget.closest('.card');
+  archiveCard(card.dataset.id);
+}
+
+// Toggle a brief read/unread (both ways). Persists locally; re-renders the single card in place.
+function onToggleRead(e) {
+  e.stopPropagation();
+  const card = e.currentTarget.closest('.card');
+  const id = card.dataset.id;
+  const nowRead = !readBriefs.has(id);
+  setRead(id, nowRead);
+  render();
+  toast(nowRead ? 'Marked read' : 'Marked unread');
+}
+
+function onCopyFilepath(e) {
+  e.stopPropagation();
+  const fp = e.currentTarget.dataset.fp || '';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(fp).then(() => toast('Filepath copied'), () => toast('Copy failed'));
+  } else {
+    const ta = document.createElement('textarea'); ta.value = fp; document.body.appendChild(ta);
+    ta.select(); try { document.execCommand('copy'); toast('Filepath copied'); } catch { toast('Copy failed'); }
+    ta.remove();
+  }
+}
+
+function onChoose(e) {
+  const card = e.currentTarget.closest('.card');
+  const notes = (card.querySelector('.notes') || {}).value || '';
+  submitCard(card, { id: card.dataset.id, chosen: e.currentTarget.dataset.opt, notes }, 'Saved: ' + e.currentTarget.dataset.opt);
+}
+
+function onComment(e) {
+  const card = e.currentTarget.closest('.card');
+  const noteEl = card.querySelector('.notes');
+  const notes = noteEl ? noteEl.value.trim() : '';
+  if (!notes) { if (noteEl) noteEl.focus(); toast('Type a comment first'); return; }
+  submitCard(card, { id: card.dataset.id, notes }, 'Comment submitted');
+}
+
+/* ---------- auth + load ---------- */
+function loginView(errMsg) {
+  app.innerHTML = `<div class="login">
+    <h1>Docket</h1>
+    <p class="tag">Enter your passcode to triage.</p>
+    <input id="pw" type="password" placeholder="passcode" autocomplete="current-password">
+    <button id="go">Enter</button>
+    <p class="err" id="err">${errMsg ? esc(errMsg) : ''}</p></div>`;
+  const submit = () => { const v = document.getElementById('pw').value.trim();
+    if (!v) { document.getElementById('err').textContent = 'Enter your passcode.'; return; }
+    secret = v; localStorage.setItem(KEY, secret); load(); };
+  document.getElementById('go').onclick = submit;
+  document.getElementById('pw').onkeydown = e => { if (e.key === 'Enter') submit(); };
+}
+
+async function load() {
+  flushPendingArchive();   // commit any un-undone archive before refreshing state
+  if (!document.querySelector('header')) app.innerHTML = '<div class="msg">Loading…</div>';
+  let r;
+  try { r = await api('/api/items'); } catch { app.innerHTML = '<div class="msg">Network error.</div>'; return; }
+  if (r.status === 401) { localStorage.removeItem(KEY); secret=''; loginView('Incorrect passcode — try again.'); return; }
+  if (!r.ok) { app.innerHTML = '<div class="msg">Error ' + r.status + '.</div>'; return; }
+  const { items, reads, answered } = await r.json();
+  currentItems = items || [];
+  // server read-state is authoritative on load; merge into the local cache so cross-device reads show
+  if (Array.isArray(reads)) { readBriefs = new Set(reads); localStorage.setItem(READ_KEY, JSON.stringify(reads)); }
+  if (Array.isArray(answered)) answeredEmbeds = new Set(answered);   // embed answered-state (FR-038)
+  // prune state that no longer exists
+  const ids = new Set(currentItems.map(i => i.id));
+  [...openCards].forEach(id => { if (!ids.has(id)) openCards.delete(id); });
+  [...selectedIds].forEach(id => { if (!ids.has(id)) selectedIds.delete(id); });
+  if (selectedId && !ids.has(selectedId)) selectedId = null;
+  render();
+}
+
+// hardware/browser back: on phone, close the reader overlay then the rail before leaving the app
+window.onpopstate = () => {
+  if (isPhone() && selectedId) { selectedId = null; render(); }
+  else if (railOpen) { railOpen = false; render(); }
+};
+
+if (secret) load(); else loginView();
+</script>
+</body>
+</html>
