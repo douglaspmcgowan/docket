@@ -6,20 +6,94 @@
 // on results.json is possible but it's one human tapping — effectively serial.)
 // ponytail: aggregate-blob store, split by writer. Move to per-key blobs only if the card
 // count or concurrent-writer count ever makes a whole-file rewrite too costly.
-// Backend select: LOCAL_STORE_DIR set (the local mirror, local-server.js) -> plain JSON files on disk,
-// which never leave the machine, so NASA-SENSITIVE content is safe here. Unset (Vercel) -> the Blob
-// store. @vercel/blob is lazy-required only in the cloud branch, so the local mirror needs no install.
+// Backend select: LOCAL_STORE_DIR set (the local mirror, local-server.js) -> SQLite authority plus
+// a current JSON export and one previous export per document. Unset (Vercel) -> the Blob store.
+// @vercel/blob is lazy-required only in the cloud branch.
 const LOCAL_DIR = process.env.LOCAL_STORE_DIR;
+let localDb;
+
+function getLocalDb() {
+  if (localDb) return localDb;
+  const fs = require('fs'), path = require('path');
+  const { DatabaseSync } = require('node:sqlite');
+  fs.mkdirSync(LOCAL_DIR, { recursive: true });
+  localDb = new DatabaseSync(path.join(LOCAL_DIR, 'docket.sqlite3'));
+  localDb.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = FULL;
+    CREATE TABLE IF NOT EXISTS documents (
+      name TEXT PRIMARY KEY,
+      body TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+  return localDb;
+}
+
+function parseObject(text) {
+  try {
+    const value = JSON.parse(text);
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function upsertLocal(pathname, obj) {
+  const db = getLocalDb();
+  db.prepare(`
+    INSERT INTO documents (name, body, updated_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(name) DO UPDATE SET body = excluded.body, updated_at = excluded.updated_at
+  `).run(pathname, JSON.stringify(obj), new Date().toISOString());
+}
+
+function readLocal(pathname) {
+  const fs = require('fs'), path = require('path');
+  const row = getLocalDb().prepare('SELECT body FROM documents WHERE name = ?').get(pathname);
+  if (row) return parseObject(row.body);
+
+  const legacyPath = path.join(LOCAL_DIR, pathname);
+  if (!fs.existsSync(legacyPath)) return {};
+  const imported = parseObject(fs.readFileSync(legacyPath, 'utf8'));
+  upsertLocal(pathname, imported);
+  return imported;
+}
+
+function writeLocal(pathname, obj) {
+  const fs = require('fs'), path = require('path');
+  const value = obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
+  fs.mkdirSync(LOCAL_DIR, { recursive: true });
+  const dst = path.join(LOCAL_DIR, pathname);
+  const tmp = dst + '.tmp';
+  const backupDir = path.join(LOCAL_DIR, 'backups');
+  const previous = path.join(backupDir, pathname.replace(/\.json$/, '.previous.json'));
+  const oldExport = fs.existsSync(dst) ? fs.readFileSync(dst) : null;
+
+  fs.writeFileSync(tmp, JSON.stringify(value, null, 2));
+  if (oldExport) {
+    fs.mkdirSync(backupDir, { recursive: true });
+    fs.writeFileSync(previous + '.tmp', oldExport);
+    fs.renameSync(previous + '.tmp', previous);
+  }
+  fs.renameSync(tmp, dst);
+
+  try {
+    upsertLocal(pathname, value);
+  } catch (error) {
+    if (oldExport) {
+      fs.writeFileSync(tmp, oldExport);
+      fs.renameSync(tmp, dst);
+    } else if (fs.existsSync(dst)) {
+      fs.rmSync(dst);
+    }
+    throw error;
+  }
+}
 
 async function readJson(pathname) {
   if (LOCAL_DIR) {
-    const fs = require('fs'), path = require('path');
-    try {
-      const v = JSON.parse(fs.readFileSync(path.join(LOCAL_DIR, pathname), 'utf8'));
-      return v && typeof v === 'object' ? v : {};
-    } catch {
-      return {}; // ENOENT on first-ever read, or bad JSON -> empty map
-    }
+    return readLocal(pathname);
   }
   const { get } = require('@vercel/blob');
   // useCache:false = read-after-write consistency (a push then immediate items read must be fresh).
@@ -36,12 +110,7 @@ async function readJson(pathname) {
 
 async function writeJson(pathname, obj) {
   if (LOCAL_DIR) {
-    const fs = require('fs'), path = require('path');
-    fs.mkdirSync(LOCAL_DIR, { recursive: true });
-    // write-to-temp + rename = atomic swap, so a crash mid-write can't leave a truncated store file.
-    const dst = path.join(LOCAL_DIR, pathname), tmp = dst + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(obj));
-    fs.renameSync(tmp, dst);
+    writeLocal(pathname, obj);
     return;
   }
   const { put } = require('@vercel/blob');

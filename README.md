@@ -73,7 +73,7 @@ Reference walkthrough (env vars are already set, so you don't need most of this)
 - `api/submit.js` — POST a decision (id, chosen, notes)
 - `api/sync.js`   — POST `?op=push` (upload items) / GET `?op=pull` (download answers)
 - `api/_auth.js`  — shared-passcode gate (Bearer APP_SECRET) on every endpoint
-- `api/_store.js` — Blob storage layer (items.json + results.json, split by writer)
+- `api/_store.js` — private Blob storage in Vercel; local SQLite authority with JSON exports
 - `public/index.html` — mobile UI (passcode prompt → tap an option per card)
 - `sync.js`       — local two-way sync (run on the laptop)
 
@@ -107,6 +107,25 @@ $env:REVIEW_URL    = "https://vault-review-mobile.vercel.app"   # your deploy UR
 $env:REVIEW_SECRET = "<the 40-char secret from step 2>"
 node sync.js --watch   # from this folder
 ```
+
+## Local storage
+
+When `LOCAL_STORE_DIR` is set, Docket stores the authoritative local documents in
+`docket.sqlite3`. Every successful mutation also writes a readable `items.json`,
+`results.json`, `tickets.json`, or `reads.json` export. Before replacing an existing
+export, Docket preserves its prior state under `backups\<name>.previous.json`.
+
+Existing JSON-only local stores migrate lazily: the first read imports each JSON
+document into SQLite. The JSON files remain portable recovery inputs. Vercel continues
+to use its private Blob store because a serverless local filesystem is not durable.
+
+`node import-outbox.js --outbox <folder> --store <folder>` imports a validated directory
+of card JSON files into the local SQLite authority while preserving unrelated existing
+items. The default paths target the shared Skills Docket outbox and `~\.docket-local`.
+
+Credential-dependent cloud sync uses the shared `Invoke-WithBitwardenSecret.ps1`
+broker. Its allowlist permits only Node running this repository’s `sync-cloud.js`;
+the child receives `REVIEW_SECRET` and cannot inherit `BWS_ACCESS_TOKEN`.
 
 Leave that running (or run without `--watch` for a one-shot). It pushes every pending card up and
 writes any answers you made on your phone back into `~/.claude/reviewer/results/`, archiving the

@@ -9,6 +9,9 @@
 !/api/
 !/public/
 !/test/
+!/.agents/
+!/.cursor/
+!/.github/
 
 # --- Keeper root files ---
 !/.gitignore
@@ -28,10 +31,27 @@
 !/consolidate-projects.js
 !/migrate-local.js
 !/cleanup-data.js
+!/import-outbox.js
 !/docket-daemon.js
 !/docket-daemon.vbs
 !/sync-review.cmd
 !/_sync_once.cmd
+!/.gitleaks.toml
+!/AGENTS.md
+!/CLAUDE.md
+!/CURRENT-TASK.md
+!/WORK_QUEUE.md
+!/STATUS.md
+!/LOG.md
+!/BACKBURNER.md
+!/VERIFY.md
+!/MAP.md
+!/DESIGN.md
+!/MEMORY.md
+!/data-manifest.yaml
+!/secret-manifest.json
+!/secret-manifest.md
+!/skills-manifest.json
 
 # --- Belt-and-suspenders (these win over any re-include above; keep secrets/bulk out even
 #     if someone later adds a stray !re-include) ---
