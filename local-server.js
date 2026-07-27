@@ -7,8 +7,7 @@
 //   PORT=8600 node local-server.js       # different port
 //   LOCAL_STORE_DIR=... node local-server.js
 //
-// Auth: same bearer passcode as the cloud (from REVIEW_SECRET or .passcode.txt), so the identical UI
-// and the same enqueue.js client work against it — point them here with --url http://127.0.0.1:8471.
+// The loopback socket is the local trust boundary. Cloud handlers still require APP_SECRET.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -19,12 +18,7 @@ const HOME = process.env.USERPROFILE || process.env.HOME || __dirname;
 
 // Local sensitive store lives OUTSIDE the git repo (never committed, never synced).
 process.env.LOCAL_STORE_DIR = process.env.LOCAL_STORE_DIR || path.join(HOME, '.docket-local');
-// The handlers' _auth.js gates on APP_SECRET; feed it the same passcode the UI/enqueue send.
-if (!process.env.APP_SECRET) {
-  const pc = path.join(__dirname, '.passcode.txt');
-  if (process.env.REVIEW_SECRET) process.env.APP_SECRET = process.env.REVIEW_SECRET.trim();
-  else if (fs.existsSync(pc)) process.env.APP_SECRET = fs.readFileSync(pc, 'utf8').trim();
-}
+const LOCAL_REQUEST = Symbol.for('docket.localRequest');
 
 // The Vercel serverless handlers, reused verbatim. LOCAL_STORE_DIR (set above) flips _store.js to files.
 const handlers = {
@@ -39,6 +33,10 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 
 // Shim a Node req/res into the { req.query, req.body, res.status().json() } shape the handlers expect.
 function shim(req, res, body) {
+  const remote = req.socket && req.socket.remoteAddress;
+  if (remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1') {
+    Object.defineProperty(req, LOCAL_REQUEST, { value: true });
+  }
   const q = {};
   const qs = (req.url.split('?')[1] || '');
   for (const p of qs.split('&')) { if (!p) continue; const [k, v] = p.split('='); q[decodeURIComponent(k)] = v === undefined ? '' : decodeURIComponent(v); }
@@ -113,8 +111,7 @@ const server = http.createServer((req, res) => {
 
 // 127.0.0.1 ONLY — sensitive content must never be reachable off-box.
 server.listen(PORT, '127.0.0.1', () => {
-  const authed = process.env.APP_SECRET ? 'passcode set' : 'NO PASSCODE (set REVIEW_SECRET or .passcode.txt)';
-  console.log(`Docket local mirror -> http://127.0.0.1:${PORT}  [store: ${process.env.LOCAL_STORE_DIR}, ${authed}]`);
+  console.log(`Docket local mirror -> http://127.0.0.1:${PORT}  [store: ${process.env.LOCAL_STORE_DIR}, loopback trusted]`);
 });
 
 module.exports = { server, PORT };

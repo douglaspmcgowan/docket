@@ -9,11 +9,13 @@ both ways.
 ```sh
 cp .env.example .env          # fill in REVIEW_URL + REVIEW_SECRET (see comments in .env.example)
 npm ci                        # install pinned deps (needs Node 22 — see .nvmrc)
-node local-server.js          # NASA-safe local mirror at http://127.0.0.1:8471 (nothing leaves the machine)
+node local-server.js          # loopback-only local mirror at http://127.0.0.1:8471
 ```
 
 Run the tests with `npm test` (`node --test`). The cloud path (Vercel) and the two-way `node sync.js`
-push/pull are optional and documented below; the local mirror needs no Vercel account.
+push/pull are optional and documented below. The local mirror needs no Vercel account or persistent
+passcode: it binds only to `127.0.0.1` and marks requests through an in-process trust marker that
+network headers cannot spoof. Cloud handlers continue to fail closed without `APP_SECRET`.
 
 All machine-specific values (deploy URL, passcode, store location, node path) come from environment
 variables loaded from `.env` — see `.env.example` for the full list. Commands below assume you run
