@@ -7,3 +7,4 @@
 2026-07-26 | Classified all 12 Docket runtime variables, regenerated/check-verified the readable secret manifest, and installed the exact-command BWS broker for cloud sync.
 2026-07-27 | Hardened the BWS broker to bind command, arguments, destination variable, and secret ID; preserved fail-closed publication and re-verified all 69 tests, the manifest, and Gitleaks.
 2026-07-27 | Confirmed the Codex GitHub connector account and repository absence; repository creation remains at the interactive CLI/browser sign-in boundary because the connector exposes no create-repository action.
+2026-07-27 | Published the private Docket repository, verified its clean lowercase clone with 69 tests and Gitleaks, and installed the limited-privilege DocketDaemon logon task with an HTTP 200 loopback check.

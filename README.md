@@ -127,6 +127,12 @@ Credential-dependent cloud sync uses the shared `Invoke-WithBitwardenSecret.ps1`
 broker. Its allowlist permits only Node running this repository’s `sync-cloud.js`;
 the child receives `REVIEW_SECRET` and cannot inherit `BWS_ACCESS_TOKEN`.
 
+Bitwarden Secrets Manager Free is sufficient for the current Docket workflow. The
+step-by-step project, secret, read-only machine account, and agent handoff guide lives
+at `C:\Users\dougl\.agents\human-readable\20-FREE-SECRETS-MANAGEMENT.md`. Keep secret
+values out of this repository; `secret-manifest.json` records variable names,
+classification, and value-free identifiers only.
+
 Leave that running (or run without `--watch` for a one-shot). It pushes every pending card up and
 writes any answers you made on your phone back into `~/.claude/reviewer/results/`, archiving the
 incoming file — so the existing local watcher routes each decision to its origin WORK_QUEUE exactly
