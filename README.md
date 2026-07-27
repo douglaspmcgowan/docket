@@ -125,13 +125,15 @@ to use its private Blob store because a serverless local filesystem is not durab
 of card JSON files into the local SQLite authority while preserving unrelated existing
 items. The default paths target the shared Skills Docket outbox and `~\.docket-local`.
 
-Credential-dependent cloud sync uses the shared `Invoke-WithBitwardenSecret.ps1`
-broker. Its allowlist permits only Node running this repository’s `sync-cloud.js`;
-the child receives `REVIEW_SECRET` and cannot inherit `BWS_ACCESS_TOKEN`.
+Credential-dependent cloud sync uses the shared `Invoke-WithBitwardenItem.ps1`
+broker and a hidden `REVIEW_SECRET` field in the Bitwarden Password Manager item
+`project:docket:production`. The child receives `REVIEW_SECRET` and cannot inherit
+`BW_SESSION`.
 
-Bitwarden Secrets Manager Free is sufficient for the current Docket workflow. The
-step-by-step project, secret, read-only machine account, and agent handoff guide lives
-at `C:\Users\dougl\.agents\human-readable\20-FREE-SECRETS-MANAGEMENT.md`. Keep secret
+Local-only Docket requires no passcode. Its public Vercel API requires `APP_SECRET`
+because internet clients can reach the deployment; the phone UI and cloud-sync
+client present the same value as `REVIEW_SECRET`. The operating guide lives at
+`C:\Users\dougl\.agents\human-readable\20-FREE-SECRETS-MANAGEMENT.md`. Keep secret
 values out of this repository; `secret-manifest.json` records variable names,
 classification, and value-free identifiers only.
 
