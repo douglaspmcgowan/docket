@@ -8,17 +8,13 @@
 const fs = require('fs');
 const path = require('path');
 const { cloudAdmissible } = require('./api/_content-guard');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const CLOUD_URL = (process.env.REVIEW_URL || 'https://vault-review-mobile.vercel.app').replace(/\/$/, '');
 const HOME = process.env.USERPROFILE || process.env.HOME || __dirname;
 const STORE = process.env.LOCAL_STORE_DIR || path.join(HOME, '.docket-local');
 
-function secret(environment = process.env) {
-  if (environment.REVIEW_SECRET && environment.REVIEW_SECRET.trim()) {
-    return environment.REVIEW_SECRET.trim();
-  }
-  throw new Error('REVIEW_SECRET is required through the approved Bitwarden Secrets Manager broker');
-}
+const secret = requireReviewSecret;
 function readLocal(name) {
   try { const v = JSON.parse(fs.readFileSync(path.join(STORE, name), 'utf8')); return v && typeof v === 'object' ? v : {}; }
   catch { return {}; }

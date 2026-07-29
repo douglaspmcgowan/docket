@@ -1,8 +1,7 @@
 // Data cleanup: consolidate the fragmented / filepath-leaked project names surfaced after migration.
 // High-confidence merges only (all reversible via another rename). node cleanup-data.js [--apply]
 const { chromium } = require('@playwright/test');
-const fs = require('fs');
-const SEC = (process.env.REVIEW_SECRET || fs.readFileSync(__dirname + '/.passcode.txt', 'utf8')).trim();
+const { requireReviewSecret } = require('./api/_review-secret');
 const BASE = (process.env.REVIEW_URL || 'https://vault-review-mobile.vercel.app').replace(/\/$/, '');
 const APPLY = process.argv.includes('--apply');
 
@@ -21,6 +20,7 @@ const RENAMES = [
 ];
 
 (async () => {
+  const SEC = requireReviewSecret();
   const b = await chromium.launch(); const p = await b.newPage();
   const H = { Authorization: 'Bearer ' + SEC, 'Content-Type': 'application/json' };
   const before = (await (await p.request.get(`${BASE}/api/sync?op=groups`, { headers: H })).json()).groups.length;

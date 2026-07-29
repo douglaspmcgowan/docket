@@ -6,7 +6,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 ## Active
 
-- [!] Push the completed Docket blocker-fix commit after explicit external-publication approval.
+- [?] Await root re-review of the repository-wide plaintext-passcode removal.
 
 ## Queue
 
@@ -24,7 +24,12 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Add a cloud-style phone bearer login and persistence proof without the local-request bypass.
 - [x] Run full verification and adversarial review.
 - [x] Commit the branch for root review.
-- [!] Push awaits explicit approval to publish the committed workspace changes to GitHub.
+- [x] Push blocker-fix commit `a6fc3fa` to the review branch.
+- [x] Add a repository-wide regression that rejects plaintext `.passcode.txt` references in runtime code.
+- [x] Require broker-injected `REVIEW_SECRET` in every active JavaScript client.
+- [x] Disable legacy passcode-reading wrappers with exact BWS broker guidance.
+- [x] Update migration documentation and durable task state.
+- [x] Run the full verification chain, commit, and push the follow-up.
 
 ## Blocked
 
@@ -65,4 +70,4 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: after explicit external-publication approval, run `git push origin codex/docket-blob-hardening`.
+- Next: root re-reviews the plaintext-passcode removal and decides whether to merge the branch.

@@ -13,10 +13,17 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const URL = (process.env.REVIEW_URL || '').replace(/\/$/, '');
-const SECRET = process.env.REVIEW_SECRET || '';
-if (!URL || !SECRET) { console.error('Set REVIEW_URL and REVIEW_SECRET env vars.'); process.exit(1); }
+if (!URL) { console.error('Set REVIEW_URL before running the legacy reviewer client.'); process.exit(1); }
+let SECRET;
+try {
+  SECRET = requireReviewSecret();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 
 const ROOT = path.join(os.homedir(), '.claude', 'reviewer');
 const INCOMING = path.join(ROOT, 'incoming');

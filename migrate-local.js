@@ -7,9 +7,9 @@
 const fs = require('fs'); const path = require('path'); const os = require('os');
 const { chromium } = require('@playwright/test');
 const { resolveBriefBody } = require('./enqueue.js');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const H = os.homedir();
-const SEC = (process.env.REVIEW_SECRET || fs.readFileSync(path.join(__dirname, '.passcode.txt'), 'utf8')).trim();
 const DO_PUSH = process.argv.includes('--push');
 // --local pushes the old desktop stores into the LOCAL MIRROR (127.0.0.1:8471) instead of the cloud.
 // Localhost is plain http, so a direct fetch works — no Playwright needed (that's only for Vercel's flaky TLS).
@@ -74,6 +74,7 @@ function main() {
   if (!DO_PUSH) { console.log('DRY RUN — pass --push to upload' + (LOCAL ? '' : ' (add --local to target the mirror)') + '.'); return; }
 
   // Local mirror: plain-http fetch (works to localhost). Cloud: Playwright (Vercel TLS is flaky here).
+  const SEC = requireReviewSecret();
   let pushed = 0;
   if (LOCAL) {
     for (let i = 0; i < items.length; i += 40) {

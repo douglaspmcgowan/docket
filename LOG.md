@@ -16,3 +16,4 @@
 2026-07-29 | Closed recovery review gaps with stable two-pass export capture, atomic verified publication, and 3-daily/4-weekly/3-monthly snapshot retention; 115 tests and a read-only live snapshot pass.
 2026-07-29 | Bound Snapshot retention defaults to the matching data-manifest asset, preserved explicit per-tier overrides and safe zero-tier behavior, and raised the verified suite to 116 tests.
 2026-07-29 | Closed Docket snapshot-inventory, retention, physical-restore, shared-content, brokered-credential, and cloud-phone proof blockers; 124 tests, both adapters, syntax/self-tests, diff checks, and Gitleaks pass.
+2026-07-29 | Removed every active plaintext passcode-file reader, centralized injected REVIEW_SECRET enforcement, disabled unsafe legacy wrappers with broker guidance, and added a repository-wide regression; 128 tests and Gitleaks pass.

@@ -110,7 +110,9 @@ supports OIDC. See Vercel's
 5. Configure Vercel `APP_SECRET` with the same bearer through Vercel's protected environment-variable
    workflow, then redeploy.
 
-`sync-cloud.js` reads only broker-injected `REVIEW_SECRET`. Local passcode files are unsupported.
+Every active JavaScript client receives `REVIEW_SECRET` through its environment. Runtime code has no
+plaintext passcode-file reader. The ignored legacy `.passcode.txt` name remains solely to prevent an
+old local copy from entering Git while Douglas removes it.
 
 ## Vercel setup
 
@@ -194,6 +196,9 @@ The harness ships the value-safe schema-version-3 `docket-sync` record. Its secu
 ```
 
 Every separately approved `enqueue.js` argument sequence needs its own command record.
+The `_sync_once.cmd` and `sync-review.cmd` legacy reviewer wrappers stop with exit code 2 and print
+the approved `docket-sync` broker command. That command is intentionally bound to `sync-cloud.js`;
+legacy `sync.js` needs its own reviewed command record before direct execution.
 
 ## Publish and verify
 
