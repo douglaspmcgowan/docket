@@ -1,7 +1,7 @@
 // POST /api/more { id, notes? } -> record a "tell me more" ticket into tickets.json.
 // This is NOT a review decision: it leaves the card pending so it stays reviewable, and Claude
 // picks the ticket up locally (sync op=tickets) to expand the card and re-push the fuller version.
-const { readItems, readTickets, writeTickets } = require('./_store');
+const { readItems, updateTickets } = require('./_store');
 const authed = require('./_auth');
 
 module.exports = async function handler(req, res) {
@@ -15,10 +15,12 @@ module.exports = async function handler(req, res) {
     const items = await readItems();
     const item = items[id];
     if (!item) return res.status(404).json({ error: 'unknown id' });
-    const tickets = await readTickets();
-    tickets[id] = { id, title: item.title || '', url: item.url || '', notes, requested_at: new Date().toISOString() };
-    await writeTickets(tickets);
-    res.status(200).json({ ok: true, ticket: tickets[id] });
+    const ticket = { id, title: item.title || '', url: item.url || '', notes, requested_at: new Date().toISOString() };
+    const outcome = await updateTickets(tickets => {
+      tickets[id] = ticket;
+      return { document: tickets, result: ticket };
+    });
+    res.status(200).json({ ok: true, ticket: outcome.result });
   } catch (e) {
     res.status(500).json({ error: String((e && e.message) || e) });
   }

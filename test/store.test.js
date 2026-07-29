@@ -26,8 +26,9 @@ test('local store: write then read round-trips through SQLite and exports JSON',
 });
 
 test('local store: separate blobs do not collide', async () => {
-  await store.writeResults({ a: { id: 'a', chosen: 'Approve' } });
-  assert.deepStrictEqual(await store.readResults(), { a: { id: 'a', chosen: 'Approve' } });
+  const result = { id: 'a', chosen: 'Approve', answered_at: '2026-07-29T00:00:00.000Z' };
+  await store.writeResults({ a: result });
+  assert.deepStrictEqual(await store.readResults(), { a: result });
   assert.deepStrictEqual(await store.readItems(), { a: { id: 'a', title: 'x' } }, 'items untouched by a results write');
 });
 
@@ -46,6 +47,40 @@ test('local store: atomic export leaves no .tmp behind', async () => {
 });
 
 test('local store: existing JSON imports into SQLite on first read', async () => {
-  fs.writeFileSync(path.join(dir, 'tickets.json'), JSON.stringify({ old: { id: 'old' } }));
-  assert.deepStrictEqual(await store.readTickets(), { old: { id: 'old' } });
+  const ticket = { id: 'old', requested_at: '2026-07-29T00:00:00.000Z' };
+  fs.writeFileSync(path.join(dir, 'tickets.json'), JSON.stringify({ old: ticket }));
+  assert.deepStrictEqual(await store.readTickets(), { old: ticket });
+});
+
+test('local store: atomic result mutations preserve parallel writers', async () => {
+  await store.writeResults({});
+  await Promise.all([
+    store.updateResults(results => {
+      results.a = { id: 'a', chosen: 'Approve', answered_at: '2026-07-29T01:00:00.000Z' };
+      return results;
+    }),
+    store.updateResults(results => {
+      results.b = { id: 'b', chosen: 'Reject', answered_at: '2026-07-29T01:00:01.000Z' };
+      return results;
+    }),
+  ]);
+  const results = await store.readResults();
+  assert.ok(results.a);
+  assert.ok(results.b);
+});
+
+test('local store: invalid JSON is reported instead of silently replaced with an empty map', async () => {
+  const corruptDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-corrupt-store-'));
+  fs.writeFileSync(path.join(corruptDir, 'reads.json'), '{bad json');
+  const storePath = require.resolve('../api/_store');
+  delete require.cache[storePath];
+  const previous = process.env.LOCAL_STORE_DIR;
+  process.env.LOCAL_STORE_DIR = corruptDir;
+  try {
+    const corruptStore = require('../api/_store');
+    await assert.rejects(corruptStore.readReads(), /invalid JSON/i);
+  } finally {
+    delete require.cache[storePath];
+    process.env.LOCAL_STORE_DIR = previous;
+  }
 });

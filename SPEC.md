@@ -182,7 +182,9 @@ board." The fix is one app over one store, reachable from both the desk and the 
 - **FR-018** — The ingest path MUST accept **all** item types — review, every decision type, and briefs — into
   the shared store (not only review + option-select).
 - **FR-019** — The ingest path MUST reject any item whose content matches CUI/NASA-internal markers, before that
-  content leaves the machine, and MUST report the rejection.
+  content leaves the machine, and MUST report the rejection. Matching is case-insensitive across nested string
+  fields and covers standalone `CUI`, `Controlled Unclassified Information`, `NASA Internal`, and
+  `NASA Sensitive` markings. An explicit `sensitive: true` is also ineligible for the shared store.
 - **FR-020** — A newly ingested item MUST become visible to the app without a manual server restart.
 
 **Answer return**

@@ -31,6 +31,13 @@ function mergeCards(existing, cards) {
   return merged;
 }
 
+async function importCards(store, cards) {
+  return store.updateItems(existing => {
+    const document = mergeCards(existing, cards);
+    return { document, result: Object.keys(document).length };
+  });
+}
+
 function parseArgs(argv) {
   const defaults = {
     outbox: path.join(os.homedir(), 'Data', 'Projects', 'agent-harness', 'docket-outbox', 'skills-audit'),
@@ -49,12 +56,10 @@ async function main() {
   const cards = loadCards(options.outbox);
   process.env.LOCAL_STORE_DIR = options.store;
   const store = require('./api/_store');
-  const existing = await store.readItems();
-  const merged = mergeCards(existing, cards);
-  await store.writeItems(merged);
+  const imported = await importCards(store, cards);
   process.stdout.write(JSON.stringify({
     imported: cards.length,
-    total: Object.keys(merged).length,
+    total: imported.result,
     store: options.store,
   }) + '\n');
 }
@@ -66,4 +71,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { loadCards, mergeCards };
+module.exports = { importCards, loadCards, mergeCards };

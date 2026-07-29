@@ -4,7 +4,7 @@
 // Blob store or the merge logic (the server owns those); it just builds the card envelope and POSTs.
 //
 // Auth/target resolution (so a fresh clone on another machine works with minimal setup):
-//   secret: $REVIEW_SECRET  ->  else .passcode.txt next to this file
+//   secret: broker-injected $REVIEW_SECRET
 //   url:    --url  ->  $REVIEW_URL  ->  https://vault-review-mobile.vercel.app
 //
 // Usage:
@@ -14,19 +14,21 @@
 //   node enqueue.js --file card.json
 //   node enqueue.js --selftest        # offline check of the envelope builder
 //
-// NOTE (SentinelOne): this reads a passcode and uploads content to an external host, which the NASA
+// NOTE (SentinelOne): this uses a bearer credential and uploads content to an external host, which the NASA
 // EDR flags as exfiltration and may quarantine this file. It lives in git — re-checkout if it vanishes.
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { cloudAdmissible } = require('./api/_content-guard');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'card';
 const hash8 = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 8);
 
 const LOCAL_URL = 'http://127.0.0.1:8471';
 const CLOUD_URL = 'https://vault-review-mobile.vercel.app';
-// A board url is "local" (safe for sensitive cards) only if it points at loopback.
+// A board URL is local only when it points at loopback.
 const isLocalUrl = u => /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/i.test(String(u));
 
 // Pure: read a brief's src file into an inline body (the cloud can't reach the local path), keeping
@@ -185,7 +187,7 @@ function parseArgs(argv) {
       case '--kind': o.kind = next(); break;
       case '--blocking': o.blocking = true; break;
       case '--public': o.sensitive = false; break;   // non-sensitive -> may go to the cloud
-      case '--sensitive': o.sensitive = true; break;  // explicit; also the default
+      case '--sensitive': o.sensitive = true; break; // explicit legacy local-first marker
       case '--url': o.url = next(); break;
       case '--file': o.file = next(); break;
       case '--groups': o.groups = true; break;
@@ -197,11 +199,8 @@ function parseArgs(argv) {
   return o;
 }
 
-function resolveSecret() {
-  if (process.env.REVIEW_SECRET) return process.env.REVIEW_SECRET.trim();
-  const pc = path.join(__dirname, '.passcode.txt');
-  if (fs.existsSync(pc)) return fs.readFileSync(pc, 'utf8').trim();
-  throw new Error('no passcode: set REVIEW_SECRET, or put .passcode.txt next to enqueue.js');
+function resolveSecret(environment = process.env) {
+  return requireReviewSecret(environment);
 }
 
 async function push(card, url, secret) {
@@ -297,7 +296,7 @@ async function main() {
   }
 
   // RECEIVE: Douglas's decisions on docketed cards (op=pull). Symmetric with push — same env-var auth,
-  // so it works from any machine (incl. a Codex sandbox with REVIEW_SECRET set, no .passcode.txt). A
+  // so it works from any machine whose approved broker injects REVIEW_SECRET into the child. A
   // pusher pulls back the result for the id it got at push time. Optional value filters by id substring.
   if (o.pull) {
     const url = (o.url || process.env.REVIEW_URL || 'https://vault-review-mobile.vercel.app').replace(/\/$/, '');
@@ -362,14 +361,16 @@ async function main() {
 
   const envelope = buildCard(card);
 
-  // Route by sensitivity. If the caller didn't force a --url/REVIEW_URL: a SENSITIVE card (the default)
-  // goes to the LOCAL mirror; a public card goes to the cloud. A sensitive card may NEVER be pushed to a
-  // non-local board — refuse it here (the cloud also refuses server-side, defense in depth).
+  // Personal cards publish to the authenticated cloud by default. The explicit legacy
+  // local-first marker remains confined to a loopback board.
   const explicitUrl = o.url || process.env.REVIEW_URL;
   const url = explicitUrl || (envelope.sensitive ? LOCAL_URL : CLOUD_URL);
   if (envelope.sensitive && !isLocalUrl(url)) {
     throw new Error('refusing to push a SENSITIVE card to a non-local board (' + url + '). Sensitive '
       + 'cards live only on the local mirror (http://127.0.0.1:8471). Mark it --public if it is NOT sensitive.');
+  }
+  if (!isLocalUrl(url) && !cloudAdmissible(envelope)) {
+    throw new Error('refusing to push a card containing a sensitive flag or restricted CUI/NASA marker to the shared board');
   }
   const secret = resolveSecret();
   const res = await push(envelope, url, secret);

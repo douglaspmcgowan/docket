@@ -3,7 +3,7 @@
 //   push: read ~/.claude/reviewer/incoming/*.json -> POST /api/sync?op=push
 //   pull: GET /api/sync?op=pull -> for each answer, write results/<id>.json and move the
 //         incoming file to archive/ (exactly what the local /api/submit would have done, so the
-//         existing result-watcher routes the answer back to its origin WORK_QUEUE).
+//         existing result-watcher routes the answer back to its originating task).
 //
 // Env: REVIEW_URL   (e.g. https://vault-review-mobile.vercel.app)
 //      REVIEW_SECRET (the APP_SECRET set on Vercel)
@@ -13,10 +13,17 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const URL = (process.env.REVIEW_URL || '').replace(/\/$/, '');
-const SECRET = process.env.REVIEW_SECRET || '';
-if (!URL || !SECRET) { console.error('Set REVIEW_URL and REVIEW_SECRET env vars.'); process.exit(1); }
+if (!URL) { console.error('Set REVIEW_URL before running the legacy reviewer client.'); process.exit(1); }
+let SECRET;
+try {
+  SECRET = requireReviewSecret();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 
 const ROOT = path.join(os.homedir(), '.claude', 'reviewer');
 const INCOMING = path.join(ROOT, 'incoming');

@@ -7,17 +7,14 @@
 //   node sync-cloud.js --selftest # offline check of the load-bearing filter
 const fs = require('fs');
 const path = require('path');
+const { cloudAdmissible } = require('./api/_content-guard');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const CLOUD_URL = (process.env.REVIEW_URL || 'https://vault-review-mobile.vercel.app').replace(/\/$/, '');
 const HOME = process.env.USERPROFILE || process.env.HOME || __dirname;
 const STORE = process.env.LOCAL_STORE_DIR || path.join(HOME, '.docket-local');
 
-function secret() {
-  if (process.env.REVIEW_SECRET) return process.env.REVIEW_SECRET.trim();
-  const pc = path.join(__dirname, '.passcode.txt');
-  if (fs.existsSync(pc)) return fs.readFileSync(pc, 'utf8').trim();
-  throw new Error('no passcode: set REVIEW_SECRET or add .passcode.txt next to sync-cloud.js');
-}
+const secret = requireReviewSecret;
 function readLocal(name) {
   try { const v = JSON.parse(fs.readFileSync(path.join(STORE, name), 'utf8')); return v && typeof v === 'object' ? v : {}; }
   catch { return {}; }
@@ -28,12 +25,26 @@ function writeLocal(name, obj) {
   fs.writeFileSync(tmp, JSON.stringify(obj)); fs.renameSync(tmp, dst);   // atomic swap
 }
 
-function syncItems(items, results) {
+function selectSyncItems(items, results) {
   const resolved = results && typeof results === 'object' ? results : {};
-  return Object.values(items || {}).filter(it =>
-    it && typeof it.id === 'string' && it.id.length > 0 &&
-    !Object.prototype.hasOwnProperty.call(resolved, it.id)
-  );
+  const selected = [];
+  let refused = 0;
+  for (const item of Object.values(items || {})) {
+    if (item && typeof item.id === 'string' &&
+        Object.prototype.hasOwnProperty.call(resolved, item.id)) {
+      continue;
+    }
+    if (!item || typeof item.id !== 'string' || !item.id || !cloudAdmissible(item)) {
+      refused += 1;
+      continue;
+    }
+    selected.push(item);
+  }
+  return { items: selected, refused };
+}
+
+function syncItems(items, results) {
+  return selectSyncItems(items, results).items;
 }
 
 function mergeCloudDecisions(cloudResults, localResults, localItems) {
@@ -59,7 +70,8 @@ async function syncOnce() {
   const sec = secret();
   const items = readLocal('items.json');
   const local = readLocal('results.json');
-  const outbound = syncItems(items, local);
+  const selection = selectSyncItems(items, local);
+  const outbound = selection.items;
 
   let pushed = 0;
   if (outbound.length) {
@@ -79,14 +91,19 @@ async function syncOnce() {
   const cloudResults = (await r2.json()).results || [];
   const decisionMerge = mergeCloudDecisions(cloudResults, local, items);
   if (decisionMerge.pulled) writeLocal('results.json', decisionMerge.merged);
-  return { pushed, pulled: decisionMerge.pulled, refusedDecisions: decisionMerge.refused };
+  return {
+    pushed,
+    pulled: decisionMerge.pulled,
+    refusedCards: selection.refused,
+    refusedDecisions: decisionMerge.refused,
+  };
 }
 
 if (process.argv.includes('--selftest')) {
   const assert = require('assert');
-  const items = { a: { id: 'a', sensitive: false }, b: { id: 'b', sensitive: true }, c: { id: 'c' }, d: { id: 'd', sensitive: 'yes' } };
-  assert.deepEqual(syncItems(items).map(x => x.id), ['a', 'b', 'c', 'd'], 'every local card must sync');
-  assert.deepEqual(syncItems(items, { b: { id: 'b', archived: true } }).map(x => x.id), ['a', 'c', 'd'], 'resolved local cards must not sync');
+  const items = { a: { id: 'a', sensitive: false }, b: { id: 'b', sensitive: true }, c: { id: 'c' }, d: { id: 'd', title: 'CUI' } };
+  assert.deepEqual(syncItems(items).map(x => x.id), ['a', 'c'], 'only cloud-safe local cards may sync');
+  assert.deepEqual(syncItems(items, { c: { id: 'c', archived: true } }).map(x => x.id), ['a'], 'resolved local cards must not sync');
   assert.equal(syncItems({ bad: null, blank: { id: '' } }).length, 0, 'invalid cards must be skipped');
   const guarded = mergeCloudDecisions(
     [{ id: 'a', answered_at: '2026-07-29T00:00:00Z' }, { id: 'unknown', answered_at: '2026-07-29T00:00:00Z' }],
@@ -101,7 +118,7 @@ if (process.argv.includes('--selftest')) {
 
 if (require.main === module) {
   syncOnce()
-    .then(r => console.log(`sync: pushed ${r.pushed} card(s), pulled ${r.pulled} decision(s), refused ${r.refusedDecisions} invalid/unknown decision(s)  @ ${CLOUD_URL}`))
+    .then(r => console.log(`sync: pushed ${r.pushed} card(s), refused ${r.refusedCards} unsafe/invalid card(s), pulled ${r.pulled} decision(s), refused ${r.refusedDecisions} invalid/unknown decision(s)  @ ${CLOUD_URL}`))
     .catch(e => { console.error(e.message); process.exit(1); });
 }
-module.exports = { syncOnce, syncItems, mergeCloudDecisions };
+module.exports = { secret, selectSyncItems, syncOnce, syncItems, mergeCloudDecisions };

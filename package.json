@@ -8,8 +8,11 @@
   },
   "scripts": {
     "test": "node --test",
+    "browser:install": "playwright install chromium",
     "start": "node local-server.js",
-    "sync": "node sync.js"
+    "sync": "node sync.js",
+    "data:inspect": "node scripts/docket-data.js inspect --backend cloud",
+    "data:verify-concurrency": "node scripts/verify-blob-concurrency.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.0"

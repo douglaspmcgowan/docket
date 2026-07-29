@@ -1,8 +1,9 @@
 # vault-review-mobile
 
-Docket is a phone-accessible review, brief, and decision queue hosted on Vercel and backed by a
-private Vercel Blob store. The local SQLite store remains the personal authority. Authenticated
-sync publishes unresolved cards and pulls newer decisions back to the computer.
+Docket is a phone-accessible review, brief, and decision queue hosted on Vercel. Four private
+Vercel Blob documents are the network authority. Every mutation uses ETag compare-and-swap, so
+concurrent clients retry instead of silently overwriting one another. A local SQLite mirror remains
+available for compatibility and recovery work.
 
 ## Live system
 
@@ -10,7 +11,7 @@ sync publishes unresolved cards and pulls newer decisions back to the computer.
 - Local mirror: <http://127.0.0.1:8471>
 - Cloud storage: private Vercel Blob
 - Cloud authentication: one bearer value, named `REVIEW_SECRET` locally and `APP_SECRET` in Vercel
-- Local credential authority: Bitwarden Password Manager
+- Local credential authority: Bitwarden Secrets Manager through the shared exact-command broker
 
 The local mirror binds only to loopback and uses an in-process trust marker that network headers
 cannot spoof. The public deployment requires bearer authentication on every API request and fails
@@ -22,6 +23,7 @@ Run these commands in PowerShell from this repository:
 
 ```powershell
 npm.cmd ci
+npm.cmd run browser:install
 node local-server.js
 ```
 
@@ -37,8 +39,8 @@ Cloud publication uses the Bitwarden broker workflow documented below. Keep cred
 of this repository, command arguments, shell history, logs, and documentation.
 
 ```text
-Local SQLite store -> authenticated push -> private Vercel Blob -> phone UI
-Local SQLite store <- validated decisions <- private Vercel Blob <- phone UI
+Agent or local mirror -> authenticated API -> private Vercel Blob authority -> phone UI
+Agent or local mirror <- validated outcomes <- private Vercel Blob authority <- phone UI
 ```
 
 ## Card grouping (Project -> Set -> Card)
@@ -59,19 +61,26 @@ Empty sets and projects hide automatically and reappear when matching cards retu
 - `api/submit.js` - POST a decision
 - `api/sync.js` - authenticated card push, decision pull, groups, reads, and tickets
 - `api/_auth.js` - bearer gate using Vercel `APP_SECRET`
-- `api/_store.js` - private Vercel Blob storage or local SQLite storage
+- `api/_store.js` - private Vercel Blob or local SQLite adapter
+- `api/_document-store.js` - compare-and-swap mutation engine and provider adapters
+- `api/_schema.js` - authoritative document and card validation
+- `api/_transfer.js` - stable complete export, atomic publication, checksum verification, and disposable restore
+- `api/_retention.js` - verified UTC daily, ISO-weekly, and monthly snapshot retention
 - `public/index.html` - mobile interface and bearer prompt
+- `scripts/docket-data.js` - inspect, export, verify, and safe restore CLI
+- `.agents/data/Manage-DocketBlob.ps1` - reviewed project-data adapter declared by `data-manifest.yaml`
 - `enqueue.js` - publish, list, archive, group, and pull individual cards
 - `sync-cloud.js` - current local-store-to-cloud synchronization
+- `docket-daemon.js` - local-server supervisor and brokered `docket-sync` scheduler
 - `sync.js` - older `~\.claude\reviewer` directory adapter
 
 ## Credential model
 
 | Name | Why it exists | Who creates it | Where it lives |
 |---|---|---|---|
-| `REVIEW_SECRET` | Authenticates local publishers, synchronizers, and the phone UI to the public Docket API. | Douglas generates one long random value with Bitwarden's generator. | Hidden field `REVIEW_SECRET` in Bitwarden Login item `project:docket:production`; injected only into an approved child process. |
+| `REVIEW_SECRET` | Authenticates local publishers, synchronizers, and the phone UI to the public Docket API. | Douglas creates one long random value in the Bitwarden Secrets Manager project approved for agent runtime. | Bitwarden Secrets Manager; injected only into the allowlisted Docket child process. |
 | `APP_SECRET` | Gives the Vercel API the expected bearer value for request comparison. | Douglas copies the exact `REVIEW_SECRET` value into Vercel. | Vercel project environment variable, scoped to Production and marked Sensitive. Preview receives the same value only when preview deployments need authenticated access. |
-| `BLOB_READ_WRITE_TOKEN` | Authenticates legacy token-based reads and writes to the private Blob store. | Vercel generates it when a token-based store is created or connected. | Vercel project environment. Store a recovery copy in the Bitwarden Hidden field only when Vercel actually provides a long-lived token. |
+| `BLOB_READ_WRITE_TOKEN` | Authenticates legacy token-based reads and writes to the private Blob store. | Vercel generates it when a token-based store is created or connected. | Vercel project environment. |
 | `REVIEW_URL` | Identifies the cloud API base URL. | Vercel assigns the deployment URL. | Public configuration; defaults to `https://vault-review-mobile.vercel.app` in current clients. |
 
 `REVIEW_SECRET` and `APP_SECRET` are two environment-variable names for one bearer value.
@@ -82,42 +91,28 @@ decision reads. `APP_SECRET` is the server-side copy used to verify that same be
 New Vercel Blob project connections default to OIDC. Existing token-based connections continue to
 use `BLOB_READ_WRITE_TOKEN` until they are explicitly upgraded. OIDC provides short-lived deployment
 credentials automatically and may produce no long-lived token. The installed `@vercel/blob` package
-supports OIDC. Leave the Bitwarden Blob field empty for an OIDC connection. See Vercel's
+supports OIDC. See Vercel's
 [OIDC migration announcement](https://vercel.com/changelog/vercel-blob-now-supports-oidc-authentication).
 
-## Bitwarden setup
+## Bitwarden Secrets Manager setup
 
-1. In an interactive Windows PowerShell, run:
+1. Create the Docket `REVIEW_SECRET` in the approved Bitwarden Secrets Manager project.
+2. Grant a per-computer, read-only machine account access to that project.
+3. In interactive Windows PowerShell, store the machine-account token in Windows Credential Manager:
 
    ```powershell
-   & "C:\Users\dougl\.agents\capsule\Run-BitwardenScaffoldInteractive.ps1"
+   & "C:\Users\dougl\.agents\tools\Set-BwsMachineToken.ps1"
    ```
 
-   Complete the Bitwarden login, master-password, and device-verification prompts in that window.
-   The wrapper creates value-free Login scaffolds, removes its temporary `BW_SESSION`, and locks the
-   CLI when creation finishes.
+   The command prompts through `SecureString`; keep the token out of command arguments and output.
+4. In the shared harness `bws-command-allowlist.json`, fill the value-safe `projectId` and `secretId`
+   fields for command `docket-sync`. Keep the secret value and machine token outside Git.
+5. Configure Vercel `APP_SECRET` with the same bearer through Vercel's protected environment-variable
+   workflow, then redeploy.
 
-2. Open Bitwarden, search for the Login item `project:docket:production`, and edit it.
-
-3. Under **Custom fields**, confirm these Hidden fields:
-
-   - `REVIEW_SECRET`
-   - `BLOB_READ_WRITE_TOKEN`
-
-4. Use Bitwarden's generator to create a long random `REVIEW_SECRET`, place it in the Hidden field,
-   and save the item.
-
-5. Fill `BLOB_READ_WRITE_TOKEN` only when the connected Vercel store exposes a long-lived token.
-   OIDC-backed stores require no stored Blob token.
-
-After a successful scaffold run, the value-free receipt is created at
-`C:\Users\dougl\.agents\tools\.local\bitwarden-scaffold-ids.json`. It records item names and
-non-secret item IDs used by the broker policy.
-
-After the Bitwarden `REVIEW_SECRET` field is filled and the same value is verified in Vercel
-`APP_SECRET`, remove any existing `C:\Users\dougl\projects\docket\.passcode.txt`. That file is a
-deprecated code fallback. The supported workflow keeps the value in Bitwarden and uses brokered
-environment injection.
+Every active JavaScript client receives `REVIEW_SECRET` through its environment. Runtime code has no
+plaintext passcode-file reader. The ignored legacy `.passcode.txt` name remains solely to prevent an
+old local copy from entering Git while Douglas removes it.
 
 ## Vercel setup
 
@@ -127,7 +122,7 @@ environment injection.
    `vault-review-mobile.vercel.app`.
 2. Open **Settings -> Environment Variables**.
 3. Add `APP_SECRET`.
-4. Paste the exact value copied from Bitwarden `REVIEW_SECRET`.
+4. Enter the Docket bearer through the protected Vercel prompt.
 5. Select **Production**, mark the variable **Sensitive**, and save it. Add Preview only when
    preview deployments need access.
 6. Redeploy the project. Environment-variable changes apply to new deployments.
@@ -148,84 +143,76 @@ vercel --prod
 vercel env ls production
 ```
 
-`vercel env add` prompts for the bearer value; paste it directly from Bitwarden. The Blob command
+`vercel env add` prompts for the bearer value. The Blob command
 prompts to connect the store to the linked project and configures its storage authentication.
 `vercel env ls production` verifies variable names and scopes without printing their values.
 
-## Full-tuple Bitwarden broker
+## Exact-command Bitwarden Secrets Manager broker
 
 The active broker is:
 
-`C:\Users\dougl\.agents\tools\Invoke-WithBitwardenItem.ps1`
+`C:\Users\dougl\.agents\tools\Invoke-WithBitwardenSecret.ps1`
 
 Its value-free policy is:
 
-`C:\Users\dougl\.agents\tools\credential-command-policy.json`
+`C:\Users\dougl\.agents\tools\bws-command-allowlist.json`
 
-Each approval matches all of these fields:
+Each approval binds:
 
-1. Bitwarden item ID
-2. Hidden field name
+1. command ID
+2. Secrets Manager project and secret IDs
 3. child environment-variable name
-4. resolved executable path
-5. complete ordered argument list
+4. resolved executable path and working directory
+5. complete ordered argument list and inherited-environment allowlist
 
-Matching the full tuple prevents a permitted field from reaching another executable, script, or
-argument sequence. The broker retrieves one field, injects it into the approved child, removes
-`BW_SESSION` from the child, runs the command, and restores the parent process state afterward.
+The broker retrieves the allowlisted secret with the machine account, injects it into the approved
+child, strips unrelated inherited variables, and scrubs its temporary environment afterward.
 
-Publication remains gated until the policy contains an exact command record. The current policy
-uses schema version 2 and a `commands` array. Add the bulk-sync record to that array after the
-Bitwarden item exists; preserve any other approved records. Replace `<bitwarden-item-id>` with the
-non-secret ID from the scaffold receipt:
+The harness ships the value-safe schema-version-3 `docket-sync` record. Its security-relevant shape is:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "commands": [
     {
+      "commandId": "docket-sync",
       "purpose": "Publish unresolved personal Docket cards and pull decisions.",
-      "item": "<bitwarden-item-id>",
-      "field": "REVIEW_SECRET",
-      "environmentVariable": "REVIEW_SECRET",
       "executable": "C:\\Program Files\\nodejs\\node.exe",
       "argumentList": [
         "C:\\Users\\dougl\\projects\\docket\\sync-cloud.js"
+      ],
+      "workingDirectory": "C:\\Users\\dougl\\projects\\docket",
+      "inheritedEnvironment": [],
+      "projectId": "<non-secret-project-id>",
+      "secretBindings": [
+        {
+          "secretId": "<non-secret-secret-id>",
+          "environmentVariable": "REVIEW_SECRET"
+        }
       ]
     }
   ]
 }
 ```
 
-Every different `enqueue.js` argument sequence needs its own exact policy record. This includes
-read-only `--groups` and `--list` commands.
+Every separately approved `enqueue.js` argument sequence needs its own command record.
+The `_sync_once.cmd` and `sync-review.cmd` legacy reviewer wrappers stop with exit code 2 and print
+the approved `docket-sync` broker command. That command is intentionally bound to `sync-cloud.js`;
+legacy `sync.js` needs its own reviewed command record before direct execution.
 
 ## Publish and verify
 
-Unlock the Bitwarden CLI in the same interactive PowerShell process, capture the session without
-printing it, run the approved broker tuple, and clear the session afterward:
+Run the approved command by ID:
 
 ```powershell
-$env:BW_SESSION = (& bw.cmd unlock --raw)
-try {
-    & "C:\Users\dougl\.agents\tools\Invoke-WithBitwardenItem.ps1" `
-        -Item "<bitwarden-item-id>" `
-        -Field "REVIEW_SECRET" `
-        -EnvironmentVariable "REVIEW_SECRET" `
-        -Executable "C:\Program Files\nodejs\node.exe" `
-        -ArgumentList @("C:\Users\dougl\projects\docket\sync-cloud.js")
-}
-finally {
-    Remove-Item Env:BW_SESSION -ErrorAction SilentlyContinue
-    & bw.cmd lock --quiet
-}
+& "C:\Users\dougl\.agents\tools\Invoke-WithBitwardenSecret.ps1" -CommandId "docket-sync"
 ```
 
 `sync-cloud.js` publishes every valid unresolved local card, pulls decisions only for known local
 cards, and accepts a cloud decision only when its answer timestamp is newer. A successful run prints:
 
 ```text
-sync: pushed <count> card(s), pulled <count> decision(s), refused <count> invalid/unknown decision(s)
+sync: pushed <count> card(s), refused <count> unsafe/invalid card(s), pulled <count> decision(s), refused <count> invalid/unknown decision(s)
 ```
 
 Verify publication at three levels:
@@ -233,39 +220,77 @@ Verify publication at three levels:
 1. Confirm the broker command exits successfully and reports the expected pushed count.
 2. Through a separately approved exact `enqueue.js --list "<project>"` tuple, confirm the expected
    stable card IDs appear on the cloud board.
-3. Open <https://vault-review-mobile.vercel.app>, enter the bearer copied from Bitwarden, decide one
+3. Open <https://vault-review-mobile.vercel.app>, enter the Docket bearer, decide one
    test card, rerun the brokered sync, and confirm the matching known card ID is pulled locally.
 
 A single-card `enqueue.js` publish succeeds only after the API acknowledges the request and prints
 the content-derived card ID. Archive verification requires `enqueue.js --archive <id>` to receive a
 matching archived result and answer timestamp.
 
-## Local storage
+## Network authority, export, and recovery
 
-When `LOCAL_STORE_DIR` is set, Docket stores authoritative local documents in `docket.sqlite3`.
+The linked private Vercel Blob store contains exactly:
 
-### Cross-computer SQLite snapshots
+- `items.json`
+- `results.json`
+- `tickets.json`
+- `reads.json`
 
-`data-manifest.yaml` declares `.agents\data\Sync-ProjectData.ps1` as Docket's project-data adapter. The adapter keeps the working database under `LOCAL_STORE_DIR` (default `%USERPROFILE%\.docket-local`) and writes immutable transactionally consistent snapshots under `%PROJECT_DATA_SYNC_ROOT%\docket\sqlite\docket.sqlite3`. Each snapshot has a SHA-256 sidecar and value-free metadata. The shared helper keeps the five newest snapshots by default and preserves the current local database before a restore.
+`data-manifest.yaml` declares this store as the live document/object authority and names the
+project-owned adapter. Export reads all four documents and source versions, reads them again, and
+retries when any version changed during assembly. It writes into a temporary sibling, verifies the
+complete schema, exact plain-file inventory of four documents plus the manifest, record counts, and SHA-256 checksums, then atomically publishes the
+finished directory. A failed or unstable capture leaves no partial target directory.
 
 Agents run:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Status
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Export
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Restore
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Inspect -Source Cloud
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Export -Source Cloud -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<new-export-folder>"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Snapshot -Source Cloud
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Verify -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<export-folder>"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Restore -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<export-folder>" -RestoreTarget "$env:PROJECT_DATA_ROOT\docket\runtime\<new-target>"
 ```
 
-The application should be stopped for restore. Export uses SQLite's online backup API and can capture a consistent committed state while the database is active.
-Every successful mutation also writes a readable `items.json`, `results.json`, `tickets.json`, or
-`reads.json` export. Before replacing an existing export, Docket preserves its prior state under
-`backups\<name>.previous.json`.
+`Snapshot` creates a timestamped verified export under
+`%PROJECT_DATA_ROOT%\docket\private\docket-cloud-exports`. It keeps the union of the newest point in
+3 distinct UTC days, 4 distinct ISO weeks, and 3 distinct UTC months, while always preserving the
+newest verified point. The adapter reads these defaults from the `docket-cloud-authority` asset in
+`data-manifest.yaml`. Explicit `-Daily`, `-Weekly`, and `-Monthly` values override the corresponding
+manifest fields individually. Each count accepts any nonnegative integer; setting all three to zero
+still preserves the newest verified snapshot. Add
+`-RetentionDryRun` to create and verify the new snapshot while reporting older verified directories
+that would be pruned. Unknown, invalid, linked, reparse-point, or out-of-root entries are preserved
+or rejected before deletion. Retention deletes only the five verified plain files and their now-empty
+snapshot directory; it never recursively removes an invalid snapshot.
 
-Existing JSON-only local stores migrate lazily: the first read imports each JSON document into
-SQLite. The JSON files remain portable recovery inputs. Vercel uses its private Blob store because
-a serverless local filesystem is ephemeral.
+The reviewed nightly agent invocation is:
 
-This command imports a validated card outbox into the local authority while preserving unrelated
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\dougl\projects\docket\.agents\data\Manage-DocketBlob.ps1" -Action Snapshot -Source Cloud -Daily 3 -Weekly 4 -Monthly 3
+```
+
+The harness can call that command after this branch is merged. This branch does not install another
+global schedule.
+
+The final command is a mutation-free dry run. Adding `-Disposable` writes only to a physically empty
+local target with no files, directories, or links and verifies every restored document. Cloud restore is disabled in the adapter, which
+prevents an export test from overwriting live data.
+
+The adapter uses the existing linked Vercel user session and `vercel env run`. Storage credentials
+stay inside the child process and never appear in command arguments or output.
+
+## Local SQLite compatibility mirror
+
+When `LOCAL_STORE_DIR` is set, Docket stores the same four documents in `docket.sqlite3`. The local
+adapter uses a guarded SQLite transaction and writes current JSON exports plus the immediately
+previous export. Existing JSON-only local stores migrate lazily on first read.
+
+The older `.agents\data\Sync-ProjectData.ps1` remains available for transactionally consistent
+SQLite snapshots. It is a compatibility recovery path; the network authority named in
+`data-manifest.yaml` reconstructs a new computer directly.
+
+This command imports a validated card outbox into the local compatibility mirror while preserving unrelated
 items:
 
 ```powershell
@@ -276,6 +301,10 @@ The default paths target the shared Skills Docket outbox and `~\.docket-local`.
 
 ## On the phone
 
-Open <https://vault-review-mobile.vercel.app>, paste the `REVIEW_SECRET` value from Bitwarden once,
+Open <https://vault-review-mobile.vercel.app>, enter the Docket bearer once,
 and triage cards. The browser stores the bearer locally. Completed cards leave the active board,
 and the next brokered sync applies valid newer decisions to the local store.
+
+Repository documentation opens on a phone through GitHub web links. Windows paths such as
+`C:\Users\...` open only on a Windows computer. Recovery exports live outside Git and need a cloud
+provider link when they must be viewed or downloaded from a phone.

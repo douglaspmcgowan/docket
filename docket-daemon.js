@@ -1,31 +1,56 @@
 #!/usr/bin/env node
 // Durable supervisor for the Docket local mirror. One long-running process that:
 //   1. keeps local-server.js (:8471) alive — respawns it with exponential backoff if it dies
-//   2. runs sync-cloud's syncOnce() every DOCKET_SYNC_MS (default 15 min) to keep the cloud's
-//      non-sensitive subset current with the local store, and pull decisions back
+//   2. invokes the approved Bitwarden Secrets Manager broker command every DOCKET_SYNC_MS
 // Wire it to a logon Scheduled Task (docket-daemon.vbs launches it hidden). Nothing sensitive leaves
-// the box: the server is 127.0.0.1-only and syncOnce pushes ONLY explicitly-public cards.
+// the box: the server is loopback-only and the brokered publisher applies the shared content guard.
 const { spawn } = require('child_process');
+const fs = require('fs');
 const path = require('path');
-const { syncOnce } = require('./sync-cloud');
 
 const DIR = __dirname;
 const SYNC_MS = Number(process.env.DOCKET_SYNC_MS) || 15 * 60 * 1000;
-let child = null, backoff = 1000;
+const HOME = process.env.USERPROFILE || process.env.HOME || DIR;
+const BROKER = path.join(HOME, '.agents', 'tools', 'Invoke-WithBitwardenSecret.ps1');
+const WINDOWS_POWERSHELL = process.env.SystemRoot
+  ? path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  : 'powershell.exe';
+let serverChild = null, syncChild = null, backoff = 1000;
 
 function startServer() {
-  child = spawn(process.execPath, [path.join(DIR, 'local-server.js')], { cwd: DIR, stdio: 'inherit' });
-  child.on('spawn', () => { backoff = 1000; console.log('[daemon] local-server started (pid ' + child.pid + ')'); });
-  child.on('exit', (code) => {
+  serverChild = spawn(process.execPath, [path.join(DIR, 'local-server.js')], { cwd: DIR, stdio: 'inherit' });
+  serverChild.on('spawn', () => { backoff = 1000; console.log('[daemon] local-server started (pid ' + serverChild.pid + ')'); });
+  serverChild.on('exit', (code) => {
     console.error(`[daemon] local-server exited (${code}); restarting in ${backoff}ms`);
     setTimeout(startServer, backoff);
     backoff = Math.min(backoff * 2, 60000);
   });
 }
 
-async function syncTick() {
-  try { const r = await syncOnce(); console.log(`[daemon] sync: pushed ${r.pushed} public, pulled ${r.pulled} decisions`); }
-  catch (e) { console.error('[daemon] sync failed:', e.message); }
+function syncTick() {
+  return new Promise(resolve => {
+    if (!fs.existsSync(BROKER)) {
+      console.error(`[daemon] sync broker is missing: ${BROKER}`);
+      resolve();
+      return;
+    }
+    syncChild = spawn(WINDOWS_POWERSHELL, [
+      '-NoProfile',
+      '-ExecutionPolicy', 'Bypass',
+      '-File', BROKER,
+      '-CommandId', 'docket-sync',
+    ], { cwd: DIR, stdio: 'inherit', windowsHide: true });
+    syncChild.on('error', error => {
+      console.error('[daemon] brokered sync failed:', error.message);
+      syncChild = null;
+      resolve();
+    });
+    syncChild.on('exit', code => {
+      if (code !== 0) console.error(`[daemon] brokered sync exited (${code})`);
+      syncChild = null;
+      resolve();
+    });
+  });
 }
 
 startServer();
@@ -33,4 +58,8 @@ startServer();
 // never overlaps the next one.
 setTimeout(function loop() { syncTick().finally(() => setTimeout(loop, SYNC_MS)); }, 5000);
 
-for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { if (child) child.kill(); process.exit(0); });
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => {
+  if (serverChild) serverChild.kill();
+  if (syncChild) syncChild.kill();
+  process.exit(0);
+});

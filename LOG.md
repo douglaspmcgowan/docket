@@ -11,3 +11,9 @@
 2026-07-27 | Repaired local API authentication with loopback socket validation and an unspoofable in-process marker; imported five setup handoffs; all 73 tests pass.
 2026-07-29 | Added archive-aware cloud publication and a verified single-card archive CLI; regression and assembled loopback coverage raise the suite to 84 tests.
 2026-07-29 | Added the shared-harness Docket SQLite snapshot adapter with checksum, restore-backup, and paths-with-spaces coverage.
+2026-07-29 | Hardened all four Vercel Blob aggregates with schema validation and ETag compare-and-swap; created and verified a complete live export; restored it into a disposable local target.
+2026-07-29 | Added complete export/restore adapters, atomic outbox imports, phone Playwright coverage, v3 harness state, and retry handling for Vercel's untyped conflict response; 109 tests and the live isolated CAS check pass.
+2026-07-29 | Closed recovery review gaps with stable two-pass export capture, atomic verified publication, and 3-daily/4-weekly/3-monthly snapshot retention; 115 tests and a read-only live snapshot pass.
+2026-07-29 | Bound Snapshot retention defaults to the matching data-manifest asset, preserved explicit per-tier overrides and safe zero-tier behavior, and raised the verified suite to 116 tests.
+2026-07-29 | Closed Docket snapshot-inventory, retention, physical-restore, shared-content, brokered-credential, and cloud-phone proof blockers; 124 tests, both adapters, syntax/self-tests, diff checks, and Gitleaks pass.
+2026-07-29 | Removed every active plaintext passcode-file reader, centralized injected REVIEW_SECRET enforcement, disabled unsafe legacy wrappers with broker guidance, and added a repository-wide regression; 128 tests and Gitleaks pass.
