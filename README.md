@@ -64,7 +64,8 @@ Empty sets and projects hide automatically and reappear when matching cards retu
 - `api/_store.js` - private Vercel Blob or local SQLite adapter
 - `api/_document-store.js` - compare-and-swap mutation engine and provider adapters
 - `api/_schema.js` - authoritative document and card validation
-- `api/_transfer.js` - complete export, checksum verification, and disposable restore
+- `api/_transfer.js` - stable complete export, atomic publication, checksum verification, and disposable restore
+- `api/_retention.js` - verified UTC daily, ISO-weekly, and monthly snapshot retention
 - `public/index.html` - mobile interface and bearer prompt
 - `scripts/docket-data.js` - inspect, export, verify, and safe restore CLI
 - `.agents/data/Manage-DocketBlob.ps1` - reviewed project-data adapter declared by `data-manifest.yaml`
@@ -257,17 +258,37 @@ The linked private Vercel Blob store contains exactly:
 - `reads.json`
 
 `data-manifest.yaml` declares this store as the live document/object authority and names the
-project-owned adapter. A complete export includes all four documents, their source ETags, record
-counts, and SHA-256 checksums. Schema and inventory verification run before any restore.
+project-owned adapter. Export reads all four documents and source versions, reads them again, and
+retries when any version changed during assembly. It writes into a temporary sibling, verifies the
+complete schema, inventory, record counts, and SHA-256 checksums, then atomically publishes the
+finished directory. A failed or unstable capture leaves no partial target directory.
 
 Agents run:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Inspect -Source Cloud
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Export -Source Cloud -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<new-export-folder>"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Snapshot -Source Cloud
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Verify -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<export-folder>"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Restore -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<export-folder>" -RestoreTarget "$env:PROJECT_DATA_ROOT\docket\runtime\<new-target>"
 ```
+
+`Snapshot` creates a timestamped verified export under
+`%PROJECT_DATA_ROOT%\docket\private\docket-cloud-exports`. It keeps the union of the newest point in
+3 distinct UTC days, 4 distinct ISO weeks, and 3 distinct UTC months, while always preserving the
+newest verified point. `-Daily`, `-Weekly`, and `-Monthly` override those values. Add
+`-RetentionDryRun` to create and verify the new snapshot while reporting older verified directories
+that would be pruned. Unknown, invalid, linked, reparse-point, or out-of-root entries are preserved
+or rejected before deletion.
+
+The reviewed nightly agent invocation is:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\dougl\projects\docket\.agents\data\Manage-DocketBlob.ps1" -Action Snapshot -Source Cloud -Daily 3 -Weekly 4 -Monthly 3
+```
+
+The harness can call that command after this branch is merged. This branch does not install another
+global schedule.
 
 The final command is a mutation-free dry run. Adding `-Disposable` writes only to an empty local
 target and verifies every restored document. Cloud restore is disabled in the adapter, which

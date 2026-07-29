@@ -56,3 +56,26 @@ test('the data CLI refuses a cloud restore command', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /cloud restore is disabled/i);
 });
+
+test('the data CLI creates verified snapshots and applies explicit retention buckets', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-cli-snapshot-'));
+  const source = path.join(root, 'source');
+  const snapshots = path.join(root, 'snapshots');
+  seed(source);
+
+  const first = run([
+    'snapshot', '--backend', 'local', '--store-dir', source, '--output', snapshots,
+    '--generated-at', '2026-07-28T12:00:00.000Z',
+    '--daily', '1', '--weekly', '0', '--monthly', '0',
+  ]);
+  assert.equal(first.status, 0, first.stderr);
+
+  const second = run([
+    'snapshot', '--backend', 'local', '--store-dir', source, '--output', snapshots,
+    '--generated-at', '2026-07-29T12:00:00.000Z',
+    '--daily', '1', '--weekly', '0', '--monthly', '0',
+  ]);
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /"action":"snapshot"/);
+  assert.equal(fs.readdirSync(snapshots).length, 1);
+});

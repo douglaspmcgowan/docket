@@ -30,7 +30,7 @@
 | Cloud API | Authenticated items, submit, sync, artifact, read-state, and group operations | `api/*.js` | Project |
 | Storage adapter | Compare-and-swap document store over Vercel Blob or local SQLite | `api/_store.js`, `api/_document-store.js` | Project |
 | Schema boundary | Validate all authoritative documents and incoming cards | `api/_schema.js` | Project |
-| Recovery layer | Export, checksum, verify, and restore into a disposable target | `api/_transfer.js`, `scripts/docket-data.js`, `.agents/data/Manage-DocketBlob.ps1` | Project |
+| Recovery layer | Stable export, atomic publication, tiered retention, verification, and disposable restore | `api/_transfer.js`, `api/_retention.js`, `scripts/docket-data.js`, `.agents/data/Manage-DocketBlob.ps1` | Project |
 | Local mirror | Loopback-only compatibility mirror and recovery cache | `local-server.js` | Local runtime |
 | Enqueue client | Validate, classify, and route one card | `enqueue.js` | Shared agents |
 | Sync daemon | Keep the local mirror alive and exchange public cards/results | `docket-daemon.js`, `sync-cloud.js` | Local runtime |
@@ -51,7 +51,7 @@
 
 ## Data flow
 
-Agents create card JSON and publish it through the authenticated API. `api/_schema.js` rejects malformed cards before storage. The private Vercel Blob store carries the four authoritative aggregates. Every mutation reads the current ETag and uses a conditional write; a conflict restarts the mutation against the current document. The browser reads pending items and submits decisions through the same authority. The project-owned data adapter exports all four documents with checksums and verifies restoration into an empty disposable target. The local SQLite server can mirror the same schema for compatibility and recovery work.
+Agents create card JSON and publish it through the authenticated API. `api/_schema.js` rejects malformed cards before storage. The private Vercel Blob store carries the four authoritative aggregates. Every mutation reads the current ETag and uses a conditional write; a conflict restarts the mutation against the current document. The browser reads pending items and submits decisions through the same authority. The project-owned data adapter confirms a stable four-document version set, atomically publishes a verified snapshot, applies tiered retention, and verifies restoration into an empty disposable target. The local SQLite server can mirror the same schema for compatibility and recovery work.
 
 ## Integrations
 

@@ -37,6 +37,57 @@ test('an export contains every authoritative document plus checksummed metadata'
   assert.equal(verifyExport(output).ok, true);
 });
 
+test('an export retries until all authoritative versions remain stable across assembly', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-stable-export-'));
+  const documents = fixtureDocuments();
+  let reads = 0;
+  const store = {
+    async readVersioned(name) {
+      reads += 1;
+      let version = 'v2';
+      if (reads <= 4) version = 'v1';
+      else if (reads <= 8) version = name === 'items.json' ? 'v2' : 'v1';
+      return { document: documents[name], version };
+    },
+  };
+
+  const output = path.join(root, 'export');
+  const manifest = await createExport(store, output, {
+    generatedAt: '2026-07-29T01:00:00.000Z',
+    maxSnapshotAttempts: 3,
+  });
+
+  assert.equal(reads, 16);
+  assert.equal(manifest.documents.every(entry => entry.source_version === 'v2'), true);
+  assert.equal(verifyExport(output).ok, true);
+});
+
+test('an unstable authority publishes no target-visible partial export', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-unstable-export-'));
+  const documents = fixtureDocuments();
+  let reads = 0;
+  const store = {
+    async readVersioned(name) {
+      reads += 1;
+      return {
+        document: documents[name],
+        version: `v${Math.ceil(reads / 4)}`,
+      };
+    },
+  };
+
+  const output = path.join(root, 'export');
+  await assert.rejects(
+    createExport(store, output, { maxSnapshotAttempts: 2 }),
+    /stable snapshot.*2 attempts/i
+  );
+  assert.equal(fs.existsSync(output), false);
+  assert.deepEqual(
+    fs.readdirSync(root).filter(name => name.includes('.building-')),
+    []
+  );
+});
+
 test('a verified export restores completely into an empty disposable target', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-restore-'));
   const source = createDocumentStore(createLocalProvider(path.join(root, 'source')));

@@ -5,6 +5,7 @@ $root = Join-Path $env:TEMP ('docket-blob-adapter-' + [Guid]::NewGuid().ToString
 $dataRoot = Join-Path $root 'data-root'
 $source = Join-Path $dataRoot 'runtime\source'
 $export = Join-Path $dataRoot 'private\export'
+$snapshotRoot = Join-Path $dataRoot 'private\snapshots'
 $target = Join-Path $dataRoot 'runtime\restore-target'
 
 function Assert-True([bool]$Condition, [string]$Message) {
@@ -37,6 +38,24 @@ try {
     $restored = & $adapter -Action Restore -DataRoot $dataRoot -ExportPath $export -RestoreTarget $target -Disposable
     Assert-True ($restored.ok -eq $true) 'Disposable restore did not report success.'
     Assert-True (Test-Path -LiteralPath (Join-Path $target 'items.json')) 'Disposable restore did not write all documents.'
+
+    $snapshot = & $adapter -Action Snapshot -Source Local -DataRoot $dataRoot -LocalStoreDir $source `
+        -SnapshotRoot $snapshotRoot -Daily 1 -Weekly 0 -Monthly 0 -RetentionDryRun
+    Assert-True ($snapshot.ok -eq $true) 'Adapter snapshot did not report success.'
+    Assert-True ($snapshot.retention.daily -eq 1) 'Adapter did not forward daily retention.'
+    Assert-True ($snapshot.retention.weekly -eq 0) 'Adapter did not forward weekly retention.'
+    Assert-True ($snapshot.retention.monthly -eq 0) 'Adapter did not forward monthly retention.'
+    Assert-True ((Get-ChildItem -LiteralPath $snapshotRoot -Directory).Count -eq 1) 'Adapter did not publish one timestamped snapshot.'
+
+    $escapeBlocked = $false
+    try {
+        & $adapter -Action Snapshot -Source Local -DataRoot $dataRoot -LocalStoreDir $source `
+            -SnapshotRoot (Join-Path (Split-Path $dataRoot -Parent) 'escaped-snapshots') | Out-Null
+    }
+    catch {
+        $escapeBlocked = $_.Exception.Message -match 'under DataRoot'
+    }
+    Assert-True $escapeBlocked 'Adapter allowed a snapshot root outside DataRoot.'
 
     Write-Output 'Manage-DocketBlob adapter tests passed.'
 }

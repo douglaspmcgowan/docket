@@ -6,11 +6,14 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 ## Active
 
-- [?] Await root review of `codex/docket-blob-hardening`.
+- [~] Publish the verified recovery follow-up for root review.
 
 ## Queue
 
-<!-- No implementation work remains on this branch. -->
+- [x] Prove and implement stable four-document export with atomic publication.
+- [x] Add verified snapshot retention with 3 daily, 4 weekly, and 3 monthly buckets.
+- [x] Update recovery documentation and rerun the full verification chain.
+- [ ] Commit and push the follow-up for root review.
 
 ## Blocked
 
@@ -35,6 +38,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Consolidated Docket task state into `TASK.md` and reduced the Codex adapter to current project pointers.
 - [x] Passed 109 Node/browser tests, both data-adapter tests, syntax/self-tests, v3 project verification, and the isolated live Blob conflict check.
 - [x] Committed and pushed the verified implementation as `926aba0`.
+- [x] Passed 115 Node/browser tests, the expanded Blob adapter test, v2 manifest validation, and a read-only live cloud snapshot with retention pruning held in dry-run mode.
 
 ## Verification
 
@@ -46,4 +50,4 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: root reviews the branch and decides whether to merge it.
+- Next: commit and push the recovery follow-up, then return it to root review.

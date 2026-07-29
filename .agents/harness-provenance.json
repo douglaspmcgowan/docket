@@ -16,23 +16,23 @@
                   },
                   {
                       "path":  "DESIGN.md",
-                      "sha256":  "5ff4dd6e7c620e1e616c5e200f9ff7fa7bf68de636f01a05391f8521f4808063"
+                      "sha256":  "a92a98cd913dd8550a8b80825aa235d228e47a91f83558795500fb0611a97051"
                   },
                   {
                       "path":  "MAP.md",
-                      "sha256":  "0491fb632322e4b6bfcd5cda918e072dfd9dc022670b77d242ae5e0bc1bacaed"
+                      "sha256":  "b3d8b88444d9c15d1c54d9889d850ea6e48ae5e45603dc5b1c6650b0408c8bfa"
                   },
                   {
                       "path":  "TASK.md",
-                      "sha256":  "f5dbdbeb933a29c6f3162ca3a68c74e14e74de869b0a679351decc1c0829c490"
+                      "sha256":  "760084b1fb6ea38e63f48d8a4d1735a6c4d7976402851c02a6524a70add4e92d"
                   },
                   {
                       "path":  "STATUS.md",
-                      "sha256":  "5713405dc5fe040a8294a10a0a96b8a83844378463ebccdc99667d8a48a022e3"
+                      "sha256":  "223ed195a2fd745cd691ed5e97cafec2d3882a25a26b4df57a2d294549722728"
                   },
                   {
                       "path":  "LOG.md",
-                      "sha256":  "420f704b02a822f8cc50ed3584a4fa7f5786799cfcfb971d7d110e834bed181f"
+                      "sha256":  "d87898ab98c1cd265c2d7e8570c29f7180d73f5e3da4399e23839ad73d914e87"
                   },
                   {
                       "path":  "BACKBURNER.md",
@@ -48,7 +48,7 @@
                   },
                   {
                       "path":  "data-manifest.yaml",
-                      "sha256":  "cfa32df88816684594b0c84af1bdc83b9135fbaa1f7da47ec104874811b8b44d"
+                      "sha256":  "d3dd62709adf66de2835f0d642baec75c2b67a098754c8b6d1903baeb52a8958"
                   },
                   {
                       "path":  "secret-manifest.json",

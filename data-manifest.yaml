@@ -11,5 +11,8 @@ assets:
     version_rule: "Each export records its UTC generation time and the source ETag of every authoritative document"
     integrity_rule: "The export must contain exactly four schema-valid documents with matching SHA-256 checksums and record counts"
     restore_verifier: "Run Manage-DocketBlob.ps1 Verify, a mutation-free Restore dry run, then Restore -Disposable into an empty local target"
-    recovery_rule: "Create and verify a complete export before risky storage changes; retain it outside Git and prove restoration in a disposable target"
+    recovery_rule: "Capture unchanged source versions across two complete reads, publish the verified export atomically, and prove restoration in a disposable target"
+    retention_daily: 3
+    retention_weekly: 4
+    retention_monthly: 3
     stale_write_rule: "compare-and-swap"

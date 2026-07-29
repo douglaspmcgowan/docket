@@ -36,7 +36,8 @@
 - The private Vercel Blob store is the current network authority. It contains exactly four aggregate documents: `items.json`, `results.json`, `tickets.json`, and `reads.json`.
 - Every aggregate mutation uses compare-and-swap. The writer reads an ETag, writes with `ifMatch`, and retries from the current document after a conflict.
 - Schema validation runs at ingest, read, write, export, and restore boundaries. Corruption fails visibly.
-- A complete export contains all four documents, source ETags, record counts, and SHA-256 checksums.
+- A complete export captures all four documents twice, retries when any source version changes, verifies in a temporary sibling, and publishes the directory atomically.
+- Timestamped recovery snapshots retain the union of 3 UTC daily, 4 ISO-weekly, and 3 monthly buckets. Counts remain adapter parameters, and the newest verified point always survives.
 - Restore defaults to a mutation-free dry run. A material restore is permitted only into an empty disposable local target through the committed adapter.
 - The local SQLite server remains a compatibility mirror and recovery cache. It uses guarded transactions and emits readable JSON exports.
 - The selected choices remain reversible through this record and `data-manifest.yaml`.

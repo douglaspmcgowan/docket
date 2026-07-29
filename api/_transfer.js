@@ -17,31 +17,70 @@ function writeAtomic(file, body) {
   fs.renameSync(temporary, file);
 }
 
+async function readStableSnapshot(store, maxAttempts) {
+  let changed = [];
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const captured = {};
+    for (const name of AUTHORITATIVE_DOCUMENTS) {
+      const state = await store.readVersioned(name);
+      validateDocument(name, state.document);
+      captured[name] = {
+        document: state.document,
+        version: state.version == null ? null : String(state.version),
+      };
+    }
+
+    changed = [];
+    for (const name of AUTHORITATIVE_DOCUMENTS) {
+      const confirmed = await store.readVersioned(name);
+      const confirmedVersion = confirmed.version == null ? null : String(confirmed.version);
+      if (captured[name].version !== confirmedVersion) changed.push(name);
+    }
+    if (!changed.length) return captured;
+  }
+  throw new Error(`could not capture a stable snapshot after ${maxAttempts} attempts; changed: ${changed.join(', ')}`);
+}
+
 async function createExport(store, outputDirectory, options = {}) {
+  const maxSnapshotAttempts = options.maxSnapshotAttempts == null ? 5 : options.maxSnapshotAttempts;
+  if (!Number.isInteger(maxSnapshotAttempts) || maxSnapshotAttempts < 1) {
+    throw new TypeError('maxSnapshotAttempts must be a positive integer');
+  }
   if (fs.existsSync(outputDirectory) && fs.readdirSync(outputDirectory).length) {
     throw new Error(`export target is not empty: ${outputDirectory}`);
   }
-  fs.mkdirSync(outputDirectory, { recursive: true });
-  const documents = [];
-  for (const name of AUTHORITATIVE_DOCUMENTS) {
-    const state = await store.readVersioned(name);
-    const body = `${JSON.stringify(state.document, null, 2)}\n`;
-    writeAtomic(path.join(outputDirectory, name), body);
-    documents.push({
-      name,
-      records: Object.keys(state.document).length,
-      sha256: hash(body),
-      source_version: state.version == null ? null : String(state.version),
-    });
+  const snapshot = await readStableSnapshot(store, maxSnapshotAttempts);
+  const parent = path.dirname(outputDirectory);
+  const temporary = path.join(parent, `.${path.basename(outputDirectory)}.building-${crypto.randomUUID()}`);
+  fs.mkdirSync(parent, { recursive: true });
+  fs.mkdirSync(temporary);
+  try {
+    const documents = [];
+    for (const name of AUTHORITATIVE_DOCUMENTS) {
+      const state = snapshot[name];
+      const body = `${JSON.stringify(state.document, null, 2)}\n`;
+      writeAtomic(path.join(temporary, name), body);
+      documents.push({
+        name,
+        records: Object.keys(state.document).length,
+        sha256: hash(body),
+        source_version: state.version,
+      });
+    }
+    const manifest = {
+      format: 'docket-authority-export',
+      version: EXPORT_FORMAT,
+      generated_at: options.generatedAt || new Date().toISOString(),
+      documents,
+    };
+    writeAtomic(path.join(temporary, EXPORT_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
+    verifyExport(temporary);
+    if (fs.existsSync(outputDirectory)) fs.rmdirSync(outputDirectory);
+    fs.renameSync(temporary, outputDirectory);
+    return manifest;
+  } finally {
+    if (fs.existsSync(temporary)) fs.rmSync(temporary, { recursive: true });
   }
-  const manifest = {
-    format: 'docket-authority-export',
-    version: EXPORT_FORMAT,
-    generated_at: options.generatedAt || new Date().toISOString(),
-    documents,
-  };
-  writeAtomic(path.join(outputDirectory, EXPORT_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
-  return manifest;
 }
 
 function readExport(outputDirectory) {

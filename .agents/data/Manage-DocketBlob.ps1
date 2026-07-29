@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Inspect', 'Export', 'Verify', 'Restore')]
+    [ValidateSet('Inspect', 'Export', 'Snapshot', 'Verify', 'Restore')]
     [string]$Action,
 
     [ValidateSet('Cloud', 'Local')]
@@ -10,8 +10,16 @@ param(
     [string]$DataRoot,
     [string]$LocalStoreDir,
     [string]$ExportPath,
+    [string]$SnapshotRoot,
     [string]$RestoreTarget,
-    [switch]$Disposable
+    [switch]$Disposable,
+    [ValidateRange(0, 100)]
+    [int]$Daily = 3,
+    [ValidateRange(0, 100)]
+    [int]$Weekly = 4,
+    [ValidateRange(0, 100)]
+    [int]$Monthly = 3,
+    [switch]$RetentionDryRun
 )
 
 $ErrorActionPreference = 'Stop'
@@ -93,6 +101,35 @@ if ($Action -eq 'Restore') {
     $arguments = @('restore', '--backend', 'local', '--store-dir', $safeTarget, '--output', $safeExport)
     if ($Disposable) { $arguments += '--disposable' }
     return Invoke-NodeData $arguments
+}
+
+if ($Action -eq 'Snapshot') {
+    if ([string]::IsNullOrWhiteSpace($SnapshotRoot)) {
+        $SnapshotRoot = Join-Path $dataRootPath 'docket\private\docket-cloud-exports'
+    }
+    $safeSnapshotRoot = Resolve-ContainedPath $dataRootPath $SnapshotRoot 'SnapshotRoot'
+    $arguments = @(
+        'snapshot', '--output', $safeSnapshotRoot,
+        '--daily', [string]$Daily,
+        '--weekly', [string]$Weekly,
+        '--monthly', [string]$Monthly
+    )
+    if ($RetentionDryRun) { $arguments += '--prune-dry-run' }
+    if ($Source -eq 'Local') {
+        if ([string]::IsNullOrWhiteSpace($LocalStoreDir)) {
+            $LocalStoreDir = if (-not [string]::IsNullOrWhiteSpace($env:LOCAL_STORE_DIR)) {
+                $env:LOCAL_STORE_DIR
+            }
+            else {
+                Join-Path $env:USERPROFILE '.docket-local'
+            }
+        }
+        $safeStore = Resolve-ContainedPath $dataRootPath $LocalStoreDir 'LocalStoreDir'
+        $arguments += @('--backend', 'local', '--store-dir', $safeStore)
+        return Invoke-NodeData $arguments
+    }
+    $arguments += @('--backend', 'cloud')
+    return Invoke-NodeData $arguments -CloudEnvironment
 }
 
 if ($Source -eq 'Local') {
