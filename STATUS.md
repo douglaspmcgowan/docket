@@ -17,3 +17,4 @@
 - The value-free secret manifest is classified and check-clean; `REVIEW_SECRET` is the remaining local cloud-sync credential.
 - Local-only operation requires no Docket passcode. The public Vercel deployment continues to require `APP_SECRET`, and cloud sync presents the same value as `REVIEW_SECRET`.
 - Bitwarden Password Manager Free is the local source of truth. Human setup instructions live at `C:\Users\dougl\.agents\human-readable\20-FREE-SECRETS-MANAGEMENT.md`.
+- Archive-aware cloud sync suppresses every locally resolved card, and `enqueue.js --archive <id>` retires a preexisting cloud card only after validating the returned archive result; 82 Node tests cover the current repository.
