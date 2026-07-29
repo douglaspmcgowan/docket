@@ -276,7 +276,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-Do
 `Snapshot` creates a timestamped verified export under
 `%PROJECT_DATA_ROOT%\docket\private\docket-cloud-exports`. It keeps the union of the newest point in
 3 distinct UTC days, 4 distinct ISO weeks, and 3 distinct UTC months, while always preserving the
-newest verified point. `-Daily`, `-Weekly`, and `-Monthly` override those values. Add
+newest verified point. The adapter reads these defaults from the `docket-cloud-authority` asset in
+`data-manifest.yaml`. Explicit `-Daily`, `-Weekly`, and `-Monthly` values override the corresponding
+manifest fields individually. Each count accepts any nonnegative integer; setting all three to zero
+still preserves the newest verified snapshot. Add
 `-RetentionDryRun` to create and verify the new snapshot while reporting older verified directories
 that would be pruned. Unknown, invalid, linked, reparse-point, or out-of-root entries are preserved
 or rejected before deletion.

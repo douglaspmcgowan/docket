@@ -90,6 +90,18 @@ test('snapshot creates a timestamped verified export and can prove pruning witho
   assert.equal(fs.readdirSync(snapshots).length, 2);
 });
 
+test('all-zero retention still preserves the newest verified recovery point', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-zero-retention-'));
+  const snapshots = path.join(root, 'snapshots');
+  const store = await sourceStore(path.join(root, 'source'));
+  await addExport(store, snapshots, '2026-07-28T12:00:00.000Z');
+  await addExport(store, snapshots, '2026-07-29T12:00:00.000Z');
+
+  const plan = planRetention(snapshots, { daily: 0, weekly: 0, monthly: 0 });
+  assert.deepEqual(plan.keep.map(item => item.generatedAt), ['2026-07-29T12:00:00.000Z']);
+  assert.equal(plan.remove.length, 1);
+});
+
 test('retention rejects a linked snapshot entry before pruning', async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-retention-link-'));
   const snapshots = path.join(root, 'snapshots');

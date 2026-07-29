@@ -3,8 +3,8 @@ const path = require('node:path');
 const { createExport, verifyExport } = require('./_transfer');
 
 function validateCount(name, value) {
-  if (!Number.isInteger(value) || value < 0 || value > 100) {
-    throw new TypeError(`${name} retention must be an integer from 0 through 100`);
+  if (!Number.isInteger(value) || value < 0) {
+    throw new TypeError(`${name} retention must be a nonnegative integer`);
   }
 }
 

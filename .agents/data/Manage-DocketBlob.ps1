@@ -11,20 +11,24 @@ param(
     [string]$LocalStoreDir,
     [string]$ExportPath,
     [string]$SnapshotRoot,
+    [string]$ManifestPath,
     [string]$RestoreTarget,
     [switch]$Disposable,
-    [ValidateRange(0, 100)]
-    [int]$Daily = 3,
-    [ValidateRange(0, 100)]
-    [int]$Weekly = 4,
-    [ValidateRange(0, 100)]
-    [int]$Monthly = 3,
+    [ValidateRange(0, 2147483647)]
+    [int]$Daily,
+    [ValidateRange(0, 2147483647)]
+    [int]$Weekly,
+    [ValidateRange(0, 2147483647)]
+    [int]$Monthly,
     [switch]$RetentionDryRun
 )
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $cli = Join-Path $repoRoot 'scripts\docket-data.js'
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path $repoRoot 'data-manifest.yaml'
+}
 
 if ([string]::IsNullOrWhiteSpace($DataRoot)) {
     $DataRoot = if (-not [string]::IsNullOrWhiteSpace($env:PROJECT_DATA_ROOT)) {
@@ -82,6 +86,29 @@ function Invoke-NodeData([string[]]$Arguments, [switch]$CloudEnvironment) {
     return ($jsonLine | ConvertFrom-Json)
 }
 
+function Get-DocketRetention([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "Docket data manifest is missing: $Path"
+    }
+    $insideAuthority = $false
+    $values = @{}
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        if ($line -match '^\s*-\s+id:\s*"?([^"#\s]+)"?\s*(?:#.*)?$') {
+            $insideAuthority = $Matches[1] -eq 'docket-cloud-authority'
+            continue
+        }
+        if ($insideAuthority -and $line -match '^\s+retention_(daily|weekly|monthly):\s*(\d+)\s*(?:#.*)?$') {
+            $values[$Matches[1]] = [int]::Parse($Matches[2])
+        }
+    }
+    foreach ($name in @('daily', 'weekly', 'monthly')) {
+        if (-not $values.ContainsKey($name)) {
+            throw "Asset docket-cloud-authority is missing retention_$name in $Path"
+        }
+    }
+    return $values
+}
+
 $dataRootPath = [IO.Path]::GetFullPath($DataRoot)
 if (-not (Test-Path -LiteralPath $dataRootPath)) {
     New-Item -ItemType Directory -Path $dataRootPath -Force | Out-Null
@@ -104,6 +131,16 @@ if ($Action -eq 'Restore') {
 }
 
 if ($Action -eq 'Snapshot') {
+    if (
+        -not $PSBoundParameters.ContainsKey('Daily') -or
+        -not $PSBoundParameters.ContainsKey('Weekly') -or
+        -not $PSBoundParameters.ContainsKey('Monthly')
+    ) {
+        $manifestRetention = Get-DocketRetention $ManifestPath
+        if (-not $PSBoundParameters.ContainsKey('Daily')) { $Daily = $manifestRetention.daily }
+        if (-not $PSBoundParameters.ContainsKey('Weekly')) { $Weekly = $manifestRetention.weekly }
+        if (-not $PSBoundParameters.ContainsKey('Monthly')) { $Monthly = $manifestRetention.monthly }
+    }
     if ([string]::IsNullOrWhiteSpace($SnapshotRoot)) {
         $SnapshotRoot = Join-Path $dataRootPath 'docket\private\docket-cloud-exports'
     }

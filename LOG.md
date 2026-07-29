@@ -14,3 +14,4 @@
 2026-07-29 | Hardened all four Vercel Blob aggregates with schema validation and ETag compare-and-swap; created and verified a complete live export; restored it into a disposable local target.
 2026-07-29 | Added complete export/restore adapters, atomic outbox imports, phone Playwright coverage, v3 harness state, and retry handling for Vercel's untyped conflict response; 109 tests and the live isolated CAS check pass.
 2026-07-29 | Closed recovery review gaps with stable two-pass export capture, atomic verified publication, and 3-daily/4-weekly/3-monthly snapshot retention; 115 tests and a read-only live snapshot pass.
+2026-07-29 | Bound Snapshot retention defaults to the matching data-manifest asset, preserved explicit per-tier overrides and safe zero-tier behavior, and raised the verified suite to 116 tests.

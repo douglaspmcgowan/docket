@@ -6,7 +6,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 ## Active
 
-- [?] Await root review of the recovery follow-up.
+- [~] Publish the verified manifest-retention integration fix.
 
 ## Queue
 
@@ -14,6 +14,8 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Add verified snapshot retention with 3 daily, 4 weekly, and 3 monthly buckets.
 - [x] Update recovery documentation and rerun the full verification chain.
 - [x] Commit and push the follow-up for root review.
+- [x] Prove manifest defaults, explicit overrides, unrestricted nonnegative counts, and safe zero-tier retention.
+- [~] Run final verification and push the integration fix.
 
 ## Blocked
 
@@ -40,6 +42,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Committed and pushed the verified implementation as `926aba0`.
 - [x] Passed 115 Node/browser tests, the expanded Blob adapter test, v2 manifest validation, and a read-only live cloud snapshot with retention pruning held in dry-run mode.
 - [x] Pushed the recovery follow-up as `e089475`.
+- [x] Passed 116 Node/browser tests and adapter regressions for manifest defaults, explicit values above 100, explicit zero values, and newest-point preservation.
 
 ## Verification
 
