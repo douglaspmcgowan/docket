@@ -6,7 +6,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 ## Active
 
-- [!] Push the completed Docket blocker-fix commit after explicit external-publication approval.
+- [!] Push the committed repository-wide plaintext-passcode removal after explicit external-publication approval.
 
 ## Queue
 
@@ -24,7 +24,13 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Add a cloud-style phone bearer login and persistence proof without the local-request bypass.
 - [x] Run full verification and adversarial review.
 - [x] Commit the branch for root review.
-- [!] Push awaits explicit approval to publish the committed workspace changes to GitHub.
+- [x] Push blocker-fix commit `a6fc3fa` to the review branch.
+- [x] Add a repository-wide regression that rejects plaintext `.passcode.txt` references in runtime code.
+- [x] Require broker-injected `REVIEW_SECRET` in every active JavaScript client.
+- [x] Disable legacy passcode-reading wrappers with exact BWS broker guidance.
+- [x] Update migration documentation and durable task state.
+- [x] Run the full verification chain and commit the follow-up.
+- [!] Push the current follow-up commit after explicit approval to publish to the configured GitHub origin.
 
 ## Blocked
 

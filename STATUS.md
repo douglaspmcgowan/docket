@@ -15,6 +15,7 @@
 - A disposable restore target must be physically empty; unrelated files, directories, and links block mutation.
 - The shared content guard excludes explicit `sensitive: true`, standalone `CUI`, `Controlled Unclassified Information`, `NASA Internal`, and `NASA Sensitive` markers at publisher and cloud-store boundaries while allowing legitimate public and unmarked cards.
 - The local SQLite server remains a compatibility mirror and recovery cache with guarded transactions and readable JSON exports.
-- Credential values remain outside Git and agent output. `sync-cloud.js` requires broker-injected `REVIEW_SECRET`, and the daemon schedules the allowlisted Bitwarden Secrets Manager `docket-sync` command.
+- Credential values remain outside Git and agent output. Every active JavaScript review client uses one shared injected-`REVIEW_SECRET` boundary. The daemon schedules the allowlisted Bitwarden Secrets Manager `docket-sync` command.
+- Runtime code contains no plaintext `.passcode.txt` reader. A repository-wide regression scans tracked and untracked active-source files, and the legacy command wrappers exit with exact BWS broker guidance.
 - The cloud-style 390-by-844 phone proof rejects a wrong bearer, accepts the correct bearer, and persists a submitted decision without loopback trust.
-- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 124 tests.
+- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 128 tests.

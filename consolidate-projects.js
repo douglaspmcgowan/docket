@@ -6,7 +6,7 @@
 //   node consolidate-projects.js --local            (dry run against the local mirror :8471)
 //   node consolidate-projects.js --local --apply    (regroup the local sensitive board)
 const https = require('https'), http = require('http'), fs = require('fs'), path = require('path');
-const SEC = fs.readFileSync(__dirname + '/.passcode.txt', 'utf8').trim();
+const { requireReviewSecret } = require('./api/_review-secret');
 const LOCAL = process.argv.includes('--local');
 const HOST = 'vault-review-mobile.vercel.app';
 const APPLY = process.argv.includes('--apply');
@@ -62,12 +62,12 @@ const MERGE = {
   // Berkeley Capstone / Examples: already single clean projects — left untouched (no entry = unchanged)
 };
 
-const post = (p, body) => new Promise((res, rej) => {
+const post = (p, body, secret) => new Promise((res, rej) => {
   const data = JSON.stringify(body);
   const mod = LOCAL ? http : https;
   const opts = LOCAL
-    ? { host: '127.0.0.1', port: 8471, path: p, method: 'POST', headers: { Authorization: 'Bearer ' + SEC, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } }
-    : { hostname: HOST, path: p, method: 'POST', headers: { Authorization: 'Bearer ' + SEC, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } };
+    ? { host: '127.0.0.1', port: 8471, path: p, method: 'POST', headers: { Authorization: 'Bearer ' + secret, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } }
+    : { hostname: HOST, path: p, method: 'POST', headers: { Authorization: 'Bearer ' + secret, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } };
   const r = mod.request(opts, rp => { let d = ''; rp.on('data', c => d += c); rp.on('end', () => res({ status: rp.statusCode, body: d })); });
   r.on('error', rej); r.write(data); r.end();
 });
@@ -94,6 +94,6 @@ const post = (p, body) => new Promise((res, rej) => {
     console.log(`  ${p}  —  ${sets.size} set(s): ${[...sets].join(', ')}`);
   if (!APPLY) { console.log('\nDRY RUN — pass --apply to push.'); return; }
   if (LOCAL) { const bak = STORE.replace(/\.json$/, '.BACKUP.json'); fs.copyFileSync(STORE, bak); console.log('store backed up ->', bak); }
-  const r = await post('/api/sync?op=push', { items });
+  const r = await post('/api/sync?op=push', { items }, requireReviewSecret());
   console.log('\npush:', r.status, r.body);
 })().catch(e => { console.error(e.message); process.exit(1); });

@@ -14,7 +14,7 @@ This generated view contains variable names and operating metadata only. Secret 
 | `LOCAL_STORE_DIR` | Local SQLite and JSON export directory | local filesystem | local data runtime | Douglas | review when storage location changes | local-server.js, api/_store.js, import-outbox.js, sync-cloud.js | configuration |
 | `LOCAL_URL` | Loopback Docket base URL | local environment | loopback runtime | Douglas | review when local port or host changes | local clients | optional-configuration |
 | `PORT` | Loopback HTTP port | local environment | loopback runtime | Douglas | review on port collision or network-policy change | local-server.js | optional-configuration |
-| `REVIEW_SECRET` | Docket sync and review bearer credential | Bitwarden Secrets Manager | approved Docket child process | Douglas | on compromise, access change, or planned credential rotation | sync-cloud.js, sync.js, enqueue.js | credential-required |
+| `REVIEW_SECRET` | Docket sync and review bearer credential | Bitwarden Secrets Manager | approved Docket child process | Douglas | on compromise, access change, or planned credential rotation | sync-cloud.js, sync.js, enqueue.js, migrate-local.js, cleanup-data.js, consolidate-projects.js | credential-required |
 | `REVIEW_URL` | Cloud Docket API base URL | Vercel | public endpoint configuration | Douglas | review when deployment URL changes | sync-cloud.js, sync.js, enqueue.js | configuration |
 | `START_PATH` | Optional initial route for the local UI | local environment | loopback UI | Douglas | review when UI routing changes | local-server.js | optional-configuration |
 

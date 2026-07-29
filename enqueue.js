@@ -4,7 +4,7 @@
 // Blob store or the merge logic (the server owns those); it just builds the card envelope and POSTs.
 //
 // Auth/target resolution (so a fresh clone on another machine works with minimal setup):
-//   secret: $REVIEW_SECRET  ->  else .passcode.txt next to this file
+//   secret: broker-injected $REVIEW_SECRET
 //   url:    --url  ->  $REVIEW_URL  ->  https://vault-review-mobile.vercel.app
 //
 // Usage:
@@ -14,13 +14,14 @@
 //   node enqueue.js --file card.json
 //   node enqueue.js --selftest        # offline check of the envelope builder
 //
-// NOTE (SentinelOne): this reads a passcode and uploads content to an external host, which the NASA
+// NOTE (SentinelOne): this uses a bearer credential and uploads content to an external host, which the NASA
 // EDR flags as exfiltration and may quarantine this file. It lives in git — re-checkout if it vanishes.
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { cloudAdmissible } = require('./api/_content-guard');
+const { requireReviewSecret } = require('./api/_review-secret');
 
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'card';
 const hash8 = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 8);
@@ -198,11 +199,8 @@ function parseArgs(argv) {
   return o;
 }
 
-function resolveSecret() {
-  if (process.env.REVIEW_SECRET) return process.env.REVIEW_SECRET.trim();
-  const pc = path.join(__dirname, '.passcode.txt');
-  if (fs.existsSync(pc)) return fs.readFileSync(pc, 'utf8').trim();
-  throw new Error('no passcode: set REVIEW_SECRET, or put .passcode.txt next to enqueue.js');
+function resolveSecret(environment = process.env) {
+  return requireReviewSecret(environment);
 }
 
 async function push(card, url, secret) {
@@ -298,7 +296,7 @@ async function main() {
   }
 
   // RECEIVE: Douglas's decisions on docketed cards (op=pull). Symmetric with push — same env-var auth,
-  // so it works from any machine (incl. a Codex sandbox with REVIEW_SECRET set, no .passcode.txt). A
+  // so it works from any machine whose approved broker injects REVIEW_SECRET into the child. A
   // pusher pulls back the result for the id it got at push time. Optional value filters by id substring.
   if (o.pull) {
     const url = (o.url || process.env.REVIEW_URL || 'https://vault-review-mobile.vercel.app').replace(/\/$/, '');
