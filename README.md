@@ -243,6 +243,20 @@ matching archived result and answer timestamp.
 ## Local storage
 
 When `LOCAL_STORE_DIR` is set, Docket stores authoritative local documents in `docket.sqlite3`.
+
+### Cross-computer SQLite snapshots
+
+`data-manifest.yaml` declares `.agents\data\Sync-ProjectData.ps1` as Docket's project-data adapter. The adapter keeps the working database under `LOCAL_STORE_DIR` (default `%USERPROFILE%\.docket-local`) and writes immutable transactionally consistent snapshots under `%PROJECT_DATA_SYNC_ROOT%\docket\sqlite\docket.sqlite3`. Each snapshot has a SHA-256 sidecar and value-free metadata. The shared helper keeps the five newest snapshots by default and preserves the current local database before a restore.
+
+Agents run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Export
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Restore
+```
+
+The application should be stopped for restore. Export uses SQLite's online backup API and can capture a consistent committed state while the database is active.
 Every successful mutation also writes a readable `items.json`, `results.json`, `tickets.json`, or
 `reads.json` export. Before replacing an existing export, Docket preserves its prior state under
 `backups\<name>.previous.json`.

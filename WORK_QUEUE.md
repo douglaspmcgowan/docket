@@ -8,3 +8,4 @@
 - [x] Implement migration, compatibility, and rollback tests in an isolated worktree (67 tests pass; Gitleaks clean).
 - [x] Make the loopback-only local API usable without a persistent passcode while preserving fail-closed cloud authentication.
 - [x] Import five setup handoff cards into the local Docket.
+- [x] Route the canonical SQLite store through transactionally consistent Google Drive snapshots and verify restore.

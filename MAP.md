@@ -42,13 +42,14 @@
 | `public/` | Browser UI and local rendering helpers | No | Yes |
 | `api/` | Cloud and shared storage handlers | No | Yes |
 | `test/` | Node test suite | No | Yes |
-| `C:\Users\dougl\Data\Projects\vault-review-mobile\runtime` | Local `docket.sqlite3`, current JSON exports, and previous exports | Yes | No |
+| `%USERPROFILE%\.docket-local` or `LOCAL_STORE_DIR` | Local `docket.sqlite3`, current JSON exports, and previous exports | Yes | No |
 | `C:\Users\dougl\Data\Projects\agent-harness\docket-outbox` | Credential-free card generation outbox | Yes | No |
+| `%PROJECT_DATA_SYNC_ROOT%\docket\sqlite\docket.sqlite3` | Immutable transactionally consistent SQLite snapshots, SHA-256 sidecars, and value-free metadata | Yes | Google Drive |
 | `C:\Users\dougl\.docket-local` | Local SQLite authority plus readable JSON exports | Yes | No |
 
 ## Data flow
 
-Agents create value-free/public or sensitive card JSON. `enqueue.js` validates the schema and routes sensitive cards to the loopback mirror while public cards may cross the network boundary to Vercel. The local adapter writes SQLite and a portable JSON export in the same synchronous mutation path. The browser reads pending items and submits decisions. Sync clients pull results into local durable state. Artifacts are resolved only through the documented artifact endpoint and configured root.
+Agents create value-free/public or sensitive card JSON. `enqueue.js` validates the schema and routes sensitive cards to the loopback mirror while public cards may cross the network boundary to Vercel. The local adapter writes SQLite and a portable JSON export in the same synchronous mutation path. `.agents\data\Sync-ProjectData.ps1` uses the installed shared harness to create or restore checksummed SQLite snapshots under `PROJECT_DATA_SYNC_ROOT`; Google Drive carries those immutable snapshots between computers. The browser reads pending items and submits decisions. Sync clients pull results into local durable state. Artifacts are resolved only through the documented artifact endpoint and configured root.
 
 ## Integrations
 
