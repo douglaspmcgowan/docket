@@ -15,6 +15,7 @@ const path = require('path');
 const PORT = Number(process.env.PORT) || 8471;
 const PUBLIC = path.join(__dirname, 'public');
 const HOME = process.env.USERPROFILE || process.env.HOME || __dirname;
+const TRUST_LOOPBACK = process.env.DOCKET_REQUIRE_BEARER !== '1';
 
 // Local sensitive store lives OUTSIDE the git repo (never committed, never synced).
 process.env.LOCAL_STORE_DIR = process.env.LOCAL_STORE_DIR || path.join(HOME, '.docket-local');
@@ -34,7 +35,8 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 // Shim a Node req/res into the { req.query, req.body, res.status().json() } shape the handlers expect.
 function shim(req, res, body) {
   const remote = req.socket && req.socket.remoteAddress;
-  if (remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1') {
+  if (TRUST_LOOPBACK &&
+      (remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1')) {
     Object.defineProperty(req, LOCAL_REQUEST, { value: true });
   }
   const q = {};

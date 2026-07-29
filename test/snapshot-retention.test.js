@@ -120,3 +120,20 @@ test('retention rejects a linked snapshot entry before pruning', async t => {
     /linked|reparse|symbolic/i
   );
 });
+
+test('retention never recursively deletes a snapshot that becomes invalid after planning', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-retention-invalid-'));
+  const snapshots = path.join(root, 'snapshots');
+  const store = await sourceStore(path.join(root, 'source'));
+  const older = await addExport(store, snapshots, '2026-07-28T12:00:00.000Z');
+  const newer = await addExport(store, snapshots, '2026-07-29T12:00:00.000Z');
+  const plan = planRetention(snapshots, { daily: 1, weekly: 0, monthly: 0 });
+  assert.deepEqual(plan.remove.map(snapshot => snapshot.path), [older]);
+
+  const unrelated = path.join(older, 'unrelated.txt');
+  fs.writeFileSync(unrelated, 'preserve');
+  assert.throws(() => applyRetention(plan), /exactly|inventory|plain file/i);
+  assert.equal(fs.existsSync(older), true);
+  assert.equal(fs.existsSync(newer), true);
+  assert.equal(fs.readFileSync(unrelated, 'utf8'), 'preserve');
+});

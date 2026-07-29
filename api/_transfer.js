@@ -17,6 +17,21 @@ function writeAtomic(file, body) {
   fs.renameSync(temporary, file);
 }
 
+function assertPlainDirectory(candidate, label) {
+  const absolute = path.resolve(candidate);
+  const root = path.parse(absolute).root;
+  let current = root;
+  for (const segment of absolute.slice(root.length).split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    if (!fs.existsSync(current)) throw new Error(`${label} is missing: ${current}`);
+    if (fs.lstatSync(current).isSymbolicLink()) {
+      throw new Error(`${label} crosses a linked or reparse-like path: ${current}`);
+    }
+  }
+  if (!fs.lstatSync(absolute).isDirectory()) throw new Error(`${label} is not a directory: ${absolute}`);
+  return absolute;
+}
+
 async function readStableSnapshot(store, maxAttempts) {
   let changed = [];
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -84,6 +99,23 @@ async function createExport(store, outputDirectory, options = {}) {
 }
 
 function readExport(outputDirectory) {
+  outputDirectory = assertPlainDirectory(outputDirectory, 'export root');
+  const expectedFiles = [...AUTHORITATIVE_DOCUMENTS, EXPORT_MANIFEST].sort();
+  const entries = fs.readdirSync(outputDirectory, { withFileTypes: true });
+  const actualFiles = [];
+  for (const entry of entries) {
+    const candidate = path.join(outputDirectory, entry.name);
+    const metadata = fs.lstatSync(candidate);
+    if (entry.isSymbolicLink() || metadata.isSymbolicLink() || !metadata.isFile()) {
+      throw new Error(`export inventory entry must be a plain file: ${entry.name}`);
+    }
+    actualFiles.push(entry.name);
+  }
+  actualFiles.sort();
+  if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) {
+    throw new Error(`export plain-file inventory must contain exactly ${expectedFiles.join(', ')}`);
+  }
+
   const manifestPath = path.join(outputDirectory, EXPORT_MANIFEST);
   if (!fs.existsSync(manifestPath)) throw new Error(`export manifest is missing: ${manifestPath}`);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -129,6 +161,7 @@ async function restoreExport(store, outputDirectory, { disposable = false } = {}
       records: Object.fromEntries(verified.manifest.documents.map(entry => [entry.name, entry.records])),
     };
   }
+  await store.assertDisposableEmpty();
   const current = await store.readAll();
   if (Object.values(current).some(document => Object.keys(document).length)) {
     throw new Error('restore target is not empty; use a new disposable target');

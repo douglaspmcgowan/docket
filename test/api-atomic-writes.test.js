@@ -92,6 +92,8 @@ test('push handler uses updateItems and refuses malformed cards without rejectin
         items: [
           { id: 'good', title: 'Good card', options: ['Approve', 'Reject'] },
           { id: 'bad' },
+          { id: 'cui', title: 'CUI//SP-PRVCY' },
+          { id: 'sensitive', title: 'Sensitive card', sensitive: true },
         ],
       },
       headers: {},
@@ -101,8 +103,10 @@ test('push handler uses updateItems and refuses malformed cards without rejectin
     await mock.loaded(req, res);
     assert.equal(res.statusCode, 200);
     assert.equal(res.payload.pushed, 1);
-    assert.equal(res.payload.refused, 1);
+    assert.equal(res.payload.refused, 3);
     assert.ok((await documents.read('items.json')).good);
+    assert.equal((await documents.read('items.json')).cui, undefined);
+    assert.equal((await documents.read('items.json')).sensitive, undefined);
   } finally {
     mock.restore();
   }

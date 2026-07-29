@@ -20,6 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { cloudAdmissible } = require('./api/_content-guard');
 
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'card';
 const hash8 = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 8);
@@ -369,6 +370,9 @@ async function main() {
   if (envelope.sensitive && !isLocalUrl(url)) {
     throw new Error('refusing to push a SENSITIVE card to a non-local board (' + url + '). Sensitive '
       + 'cards live only on the local mirror (http://127.0.0.1:8471). Mark it --public if it is NOT sensitive.');
+  }
+  if (!isLocalUrl(url) && !cloudAdmissible(envelope)) {
+    throw new Error('refusing to push a card containing a sensitive flag or restricted CUI/NASA marker to the shared board');
   }
   const secret = resolveSecret();
   const res = await push(envelope, url, secret);

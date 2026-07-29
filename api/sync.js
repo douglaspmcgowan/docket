@@ -11,12 +11,13 @@ const {
 const { listGroups, remapGroup } = require('./_groups');
 const { toggleRead } = require('./_reads');
 const { validateItem } = require('./_schema');
+const { cloudAdmissible } = require('./_content-guard');
 const authed = require('./_auth');
 
-const admissible = item => {
+const admissible = (item, cloud = !process.env.LOCAL_STORE_DIR) => {
   try {
     validateItem(item);
-    return true;
+    return !cloud || cloudAdmissible(item);
   } catch {
     return false;
   }
@@ -30,8 +31,9 @@ const handler = async function handler(req, res) {
       const incoming = Array.isArray(req.body && req.body.items) ? req.body.items : [];
       const accepted = [];
       let refused = 0;
+      const cloud = !process.env.LOCAL_STORE_DIR;
       for (const item of incoming) {
-        if (!admissible(item)) refused++;
+        if (!admissible(item, cloud)) refused++;
         else accepted.push(item);
       }
       if (accepted.length) {
@@ -43,7 +45,7 @@ const handler = async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         pushed: accepted.length,
-        ...(refused ? { refused, reason: 'invalid cards were refused' } : {}),
+        ...(refused ? { refused, reason: 'invalid, sensitive, or restricted-marker cards were refused' } : {}),
       });
     }
     if (op === 'pull' && req.method === 'GET') {

@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { createExport, verifyExport } = require('./_transfer');
+const { AUTHORITATIVE_DOCUMENTS } = require('./_schema');
+const { EXPORT_MANIFEST, createExport, verifyExport } = require('./_transfer');
 
 function validateCount(name, value) {
   if (!Number.isInteger(value) || value < 0) {
@@ -105,7 +106,13 @@ function applyRetention(plan, { dryRun = false } = {}) {
     return safePath;
   });
   if (dryRun) return { removed: [], wouldRemove: candidates };
-  for (const candidate of candidates) fs.rmSync(candidate, { recursive: true });
+  for (const candidate of candidates) {
+    verifyExport(candidate);
+    for (const name of [...AUTHORITATIVE_DOCUMENTS, EXPORT_MANIFEST]) {
+      fs.unlinkSync(path.join(candidate, name));
+    }
+    fs.rmdirSync(candidate);
+  }
   return { removed: candidates, wouldRemove: [] };
 }
 

@@ -88,7 +88,18 @@ function createDocumentStore(provider, { maxAttempts = 8 } = {}) {
     return output;
   }
 
-  return { read, readVersioned, mutate, replace, readAll };
+  async function assertDisposableEmpty() {
+    if (typeof provider.assertDisposableEmpty === 'function') {
+      await provider.assertDisposableEmpty();
+      return;
+    }
+    const current = await readAll();
+    if (Object.values(current).some(document => Object.keys(document).length)) {
+      throw new Error('restore target is not empty; use a new disposable target');
+    }
+  }
+
+  return { read, readVersioned, mutate, replace, readAll, assertDisposableEmpty };
 }
 
 function versionOf(body) {
@@ -128,6 +139,13 @@ function createLocalProvider(root) {
   if (!root) throw new TypeError('local provider root is required');
   const absoluteRoot = path.resolve(root);
   return {
+    async assertDisposableEmpty() {
+      if (!fs.existsSync(absoluteRoot)) return;
+      const metadata = fs.lstatSync(absoluteRoot);
+      if (metadata.isSymbolicLink() || !metadata.isDirectory() || fs.readdirSync(absoluteRoot).length) {
+        throw new Error('restore target is not empty; physical entries require a new disposable target');
+      }
+    },
     async read(name) {
       const file = path.join(absoluteRoot, name);
       if (!fs.existsSync(file)) return { body: null, version: null };

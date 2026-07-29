@@ -6,10 +6,15 @@
 - Reads, writes, ingest, export, and restore validate the committed document schema. Invalid JSON and malformed records fail visibly.
 - A complete live export was created at `C:\Users\dougl\Data\Projects\docket\private\cloud-export-20260729-blob-hardening`; all four documents passed checksums, schema validation, and record-count verification.
 - New exports confirm that every source version stayed unchanged across two complete reads, publish from a verified temporary sibling, and leave no partial target on failure.
+- Export verification now accepts exactly the four authoritative plain JSON files plus the plain manifest. Linked roots, linked entries, directories, and unrelated files fail verification.
+- Retention re-verifies every removal candidate and deletes only the exact verified files plus the empty directory. An invalidated snapshot remains intact.
 - The `Snapshot` adapter reads 3 UTC daily, 4 ISO-weekly, and 3 monthly defaults from the `docket-cloud-authority` manifest asset; explicitly bound nonnegative parameters override individual tiers, and zero tiers still preserve the newest verified point.
 - A read-only live `Snapshot -RetentionDryRun` produced and verified `C:\Users\dougl\Data\Projects\docket\private\docket-cloud-exports\2026-07-29T20-54-41-982Z` with record counts 580/25/1/12 and no pruning candidates.
 - That export passed a mutation-free dry run and a full restore into `C:\Users\dougl\Data\Projects\docket\runtime\restore-verification-20260729-blob-hardening`.
 - Production restore remains intentionally disabled in the adapter. Recovery proof uses an empty disposable target and cannot overwrite live data.
+- A disposable restore target must be physically empty; unrelated files, directories, and links block mutation.
+- The shared content guard excludes explicit `sensitive: true`, standalone `CUI`, `Controlled Unclassified Information`, `NASA Internal`, and `NASA Sensitive` markers at publisher and cloud-store boundaries while allowing legitimate public and unmarked cards.
 - The local SQLite server remains a compatibility mirror and recovery cache with guarded transactions and readable JSON exports.
-- Credential values remain outside Git and agent output. Existing Vercel user authentication injects the Blob variable directly into the child verifier.
-- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 116 tests.
+- Credential values remain outside Git and agent output. `sync-cloud.js` requires broker-injected `REVIEW_SECRET`, and the daemon schedules the allowlisted Bitwarden Secrets Manager `docket-sync` command.
+- The cloud-style 390-by-844 phone proof rejects a wrong bearer, accepts the correct bearer, and persists a submitted decision without loopback trust.
+- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 124 tests.

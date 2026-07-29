@@ -37,6 +37,56 @@ test('an export contains every authoritative document plus checksummed metadata'
   assert.equal(verifyExport(output).ok, true);
 });
 
+test('export verification rejects any extra file or non-plain inventory entry', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-exact-export-'));
+  const source = createDocumentStore(createLocalProvider(path.join(root, 'source')));
+  for (const [name, document] of Object.entries(fixtureDocuments())) await source.replace(name, document);
+
+  const extraFileExport = path.join(root, 'extra-file');
+  await createExport(source, extraFileExport);
+  fs.writeFileSync(path.join(extraFileExport, 'unrelated.txt'), 'keep');
+  assert.throws(() => verifyExport(extraFileExport), /exactly|inventory|plain file/i);
+
+  const directoryExport = path.join(root, 'directory-entry');
+  await createExport(source, directoryExport);
+  fs.mkdirSync(path.join(directoryExport, 'unexpected-directory'));
+  assert.throws(() => verifyExport(directoryExport), /exactly|inventory|plain file/i);
+});
+
+test('export verification rejects a linked or reparse-like inventory entry', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-linked-export-'));
+  const source = createDocumentStore(createLocalProvider(path.join(root, 'source')));
+  for (const [name, document] of Object.entries(fixtureDocuments())) await source.replace(name, document);
+  const output = path.join(root, 'export');
+  await createExport(source, output);
+  const outside = path.join(root, 'outside');
+  fs.mkdirSync(outside);
+  fs.rmSync(path.join(output, 'reads.json'));
+  try {
+    fs.symlinkSync(outside, path.join(output, 'reads.json'), 'junction');
+  } catch (error) {
+    t.skip(`junction creation unavailable: ${error.code || error.message}`);
+    return;
+  }
+  assert.throws(() => verifyExport(output), /plain file|linked|reparse/i);
+});
+
+test('export verification rejects a linked or reparse-like snapshot root', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-linked-export-root-'));
+  const source = createDocumentStore(createLocalProvider(path.join(root, 'source')));
+  for (const [name, document] of Object.entries(fixtureDocuments())) await source.replace(name, document);
+  const realOutput = path.join(root, 'real-export');
+  await createExport(source, realOutput);
+  const linkedOutput = path.join(root, 'linked-export');
+  try {
+    fs.symlinkSync(realOutput, linkedOutput, 'junction');
+  } catch (error) {
+    t.skip(`junction creation unavailable: ${error.code || error.message}`);
+    return;
+  }
+  assert.throws(() => verifyExport(linkedOutput), /snapshot root|export root|linked|reparse/i);
+});
+
 test('an export retries until all authoritative versions remain stable across assembly', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-stable-export-'));
   const documents = fixtureDocuments();
@@ -122,6 +172,16 @@ test('restore defaults to a mutation-free dry run and refuses a non-empty target
     /target is not empty/i
   );
   assert.ok((await occupied.read('items.json')).existing);
+
+  const physicallyOccupiedRoot = path.join(root, 'physically-occupied');
+  fs.mkdirSync(physicallyOccupiedRoot);
+  fs.writeFileSync(path.join(physicallyOccupiedRoot, 'unrelated.txt'), 'preserve');
+  const physicallyOccupied = createDocumentStore(createLocalProvider(physicallyOccupiedRoot));
+  await assert.rejects(
+    restoreExport(physicallyOccupied, output, { disposable: true }),
+    /target is not (physically )?empty/i
+  );
+  assert.equal(fs.readFileSync(path.join(physicallyOccupiedRoot, 'unrelated.txt'), 'utf8'), 'preserve');
 });
 
 test('checksum or schema corruption blocks restore before target mutation', async () => {

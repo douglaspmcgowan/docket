@@ -51,13 +51,13 @@
 
 ## Data flow
 
-Agents create card JSON and publish it through the authenticated API. `api/_schema.js` rejects malformed cards before storage. The private Vercel Blob store carries the four authoritative aggregates. Every mutation reads the current ETag and uses a conditional write; a conflict restarts the mutation against the current document. The browser reads pending items and submits decisions through the same authority. The project-owned data adapter confirms a stable four-document version set, atomically publishes a verified snapshot, applies tiered retention, and verifies restoration into an empty disposable target. The local SQLite server can mirror the same schema for compatibility and recovery work.
+Agents create card JSON and publish it through the authenticated API. `api/_schema.js` rejects malformed cards, and `api/_content-guard.js` rejects sensitive flags and declared CUI/NASA markers at both publisher and shared-store boundaries. The private Vercel Blob store carries the four authoritative aggregates. Every mutation reads the current ETag and uses a conditional write; a conflict restarts the mutation against the current document. The browser reads pending items and submits decisions through the same authority. The project-owned data adapter confirms an exact five-file export inventory, atomically publishes a verified snapshot, applies tiered retention only to valid snapshots, and verifies restoration into a physically empty disposable target. The local SQLite server can mirror the same schema for compatibility and recovery work.
 
 ## Integrations
 
 | System | Direction | Authentication name | Failure behavior |
 |---|---|---|---|
-| Vercel deployment | Both | `REVIEW_SECRET`, `APP_SECRET` | Authentication failure returns 401; client retains the local card |
+| Vercel deployment | Both | BWS-brokered `REVIEW_SECRET`, Vercel `APP_SECRET` | Authentication failure returns 401; client retains the local card |
 | Vercel Blob | Both | `BLOB_READ_WRITE_TOKEN` | API returns a storage error and does not claim success |
 | Local mirror | Both | Loopback trust marker | Loopback-only compatibility and recovery surface |
 | Docket browser | Both | `REVIEW_SECRET` | Passcode prompt and local cached read state |

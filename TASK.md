@@ -6,7 +6,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 ## Active
 
-- [?] Await root review of the manifest-retention integration fix.
+- [!] Push the completed Docket blocker-fix commit after explicit external-publication approval.
 
 ## Queue
 
@@ -16,6 +16,15 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Commit and push the follow-up for root review.
 - [x] Prove manifest defaults, explicit overrides, unrestricted nonnegative counts, and safe zero-tier retention.
 - [x] Run final verification and push the integration fix.
+- [x] Require exact plain-file export inventory and make invalid snapshots retention-safe.
+- [x] Reject CUI/NASA markers and conservatively filter sensitive cards at publisher and server boundaries.
+  - [x] Repository search found separate guards in `api\sync.js`, `sync-cloud.js`, and `enqueue.js`; added `api\_content-guard.js` as their single shared marker policy owner.
+- [x] Require a physically empty disposable restore target.
+- [x] Remove `.passcode.txt` credential fallback and align docs/manifests with brokered `REVIEW_SECRET`.
+- [x] Add a cloud-style phone bearer login and persistence proof without the local-request bypass.
+- [x] Run full verification and adversarial review.
+- [x] Commit the branch for root review.
+- [!] Push awaits explicit approval to publish the committed workspace changes to GitHub.
 
 ## Blocked
 
@@ -25,6 +34,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 - [?] Douglas may later replace the selected Vercel Blob authority; the current implementation and design record keep that choice reversible.
 - [?] The Docket bearer still needs the approved Bitwarden/Vercel value setup if the existing deployment value is unavailable to the phone.
+- [!] The shared project-state verifier reports the repository's inherited missing `VERIFY.md`; this Docket branch did not create a new project verification contract.
 
 ## Completed
 
@@ -55,4 +65,4 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: root reviews `5c0a788` and decides whether to merge the branch.
+- Next: after explicit external-publication approval, run `git push origin codex/docket-blob-hardening`.
