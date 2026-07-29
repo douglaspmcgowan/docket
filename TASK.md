@@ -6,7 +6,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 
 ## Active
 
-- [~] Publish the verified manifest-retention integration fix.
+- [?] Await root review of the manifest-retention integration fix.
 
 ## Queue
 
@@ -15,7 +15,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Update recovery documentation and rerun the full verification chain.
 - [x] Commit and push the follow-up for root review.
 - [x] Prove manifest defaults, explicit overrides, unrestricted nonnegative counts, and safe zero-tier retention.
-- [~] Run final verification and push the integration fix.
+- [x] Run final verification and push the integration fix.
 
 ## Blocked
 
@@ -43,6 +43,7 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Passed 115 Node/browser tests, the expanded Blob adapter test, v2 manifest validation, and a read-only live cloud snapshot with retention pruning held in dry-run mode.
 - [x] Pushed the recovery follow-up as `e089475`.
 - [x] Passed 116 Node/browser tests and adapter regressions for manifest defaults, explicit values above 100, explicit zero values, and newest-point preservation.
+- [x] Pushed the manifest-retention integration fix as `5c0a788`.
 
 ## Verification
 
@@ -54,4 +55,4 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: root reviews `e089475` and decides whether to merge the branch.
+- Next: root reviews `5c0a788` and decides whether to merge the branch.
