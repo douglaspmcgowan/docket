@@ -31,12 +31,12 @@ try {
     & $python.Source $fixtureScript $database
     if ($LASTEXITCODE -ne 0) { throw 'Docket fixture database creation failed.' }
 
-    $export = & $adapter -Action Export -LocalStoreDir $store -SyncRoot $sync -HarnessToolsPath $harnessTools
+    $export = & $adapter -Action Export -LocalStoreDir $store -LocalDataRoot $root -SyncRoot $sync -HarnessToolsPath $harnessTools
     Assert-True ($export.ProjectName -eq 'docket') 'Adapter used the wrong project namespace.'
     Assert-True (Test-Path -LiteralPath $export.SnapshotPath -PathType Leaf) 'Adapter did not export Docket SQLite.'
     Assert-True ($export.SnapshotPath.StartsWith((Join-Path $sync 'docket'), [StringComparison]::OrdinalIgnoreCase)) 'Adapter wrote outside the Docket sync namespace.'
 
-    $status = & $adapter -Action Status -LocalStoreDir $store -SyncRoot $sync -HarnessToolsPath $harnessTools
+    $status = & $adapter -Action Status -LocalStoreDir $store -LocalDataRoot $root -SyncRoot $sync -HarnessToolsPath $harnessTools
     Assert-True ($status.LocalDatabaseExists -eq $true) 'Adapter status lost the canonical Docket database.'
     Assert-True ($status.SnapshotCount -eq 1) 'Adapter status did not find the export.'
 

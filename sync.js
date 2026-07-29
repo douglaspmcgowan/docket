@@ -3,7 +3,7 @@
 //   push: read ~/.claude/reviewer/incoming/*.json -> POST /api/sync?op=push
 //   pull: GET /api/sync?op=pull -> for each answer, write results/<id>.json and move the
 //         incoming file to archive/ (exactly what the local /api/submit would have done, so the
-//         existing result-watcher routes the answer back to its origin WORK_QUEUE).
+//         existing result-watcher routes the answer back to its originating task).
 //
 // Env: REVIEW_URL   (e.g. https://vault-review-mobile.vercel.app)
 //      REVIEW_SECRET (the APP_SECRET set on Vercel)

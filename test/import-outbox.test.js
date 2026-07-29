@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { loadCards, mergeCards } = require('../import-outbox');
+const { loadCards, mergeCards, importCards } = require('../import-outbox');
+const { createDocumentStore, createMemoryProvider } = require('../api/_document-store');
 
 test('loadCards reads a deterministic set and mergeCards preserves unrelated items', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docket-outbox-unit-'));
@@ -20,6 +21,18 @@ test('loadCards reads a deterministic set and mergeCards preserves unrelated ite
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('parallel outbox imports use atomic mutations and preserve both batches', async () => {
+  const documents = createDocumentStore(createMemoryProvider({ 'items.json': {} }));
+  const store = { updateItems: mutator => documents.mutate('items.json', mutator) };
+  await Promise.all([
+    importCards(store, [{ id: 'a', title: 'A' }]),
+    importCards(store, [{ id: 'b', title: 'B' }]),
+  ]);
+  const items = await documents.read('items.json');
+  assert.ok(items.a);
+  assert.ok(items.b);
 });
 
 test('CLI imports an outbox into SQLite and the readable JSON export', () => {

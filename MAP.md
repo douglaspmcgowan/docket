@@ -7,12 +7,10 @@
 | `AGENTS.md` | Agents and humans | Every repository session | Portable project contract |
 | `CLAUDE.md` | Claude adapter | Every Claude repository session | Imports `AGENTS.md` |
 | `.cursor/rules/00-project-contract.mdc` | Cursor adapter | Every Cursor repository session | Requires `AGENTS.md` |
-| `CURRENT-TASK.md` | Agents and humans | Start, resume, handoff | Active goal, progress, exact next verifier |
-| `WORK_QUEUE.md` | Agents and harness | Multi-step work | Actionable checkbox state |
+| `TASK.md` | Agents and humans | Start, resume, handoff | Active goal, actionable queue, progress, exact next verifier |
 | `STATUS.md` | Agents and humans | Start, resume, milestone | Durable project state |
 | `LOG.md` | Agents and humans | Recent history, handoff | Append-only work record |
 | `BACKBURNER.md` | Humans and agents | Planning | Parked backlog |
-| `VERIFY.md` | Agents and CI | Before completion | Required evidence and commands |
 | `MAP.md` | Agents and humans | Orientation | This document graph and project navigation |
 | `DESIGN.md` | Agents and humans | Feature and architecture work | Goals, constraints, decisions |
 | `MEMORY.md` | Agents | Recall | Lean links to durable topic notes |
@@ -30,8 +28,10 @@
 |---|---|---|---|
 | Browser application | Browse, search, read, and triage cards | `public/index.html` | Project |
 | Cloud API | Authenticated items, submit, sync, artifact, read-state, and group operations | `api/*.js` | Project |
-| Storage adapter | Vercel Blob or local SQLite plus JSON exports | `api/_store.js` | Project |
-| Local mirror | Loopback-only server for sensitive cards | `local-server.js` | Local runtime |
+| Storage adapter | Compare-and-swap document store over Vercel Blob or local SQLite | `api/_store.js`, `api/_document-store.js` | Project |
+| Schema boundary | Validate all authoritative documents and incoming cards | `api/_schema.js` | Project |
+| Recovery layer | Export, checksum, verify, and restore into a disposable target | `api/_transfer.js`, `scripts/docket-data.js`, `.agents/data/Manage-DocketBlob.ps1` | Project |
+| Local mirror | Loopback-only compatibility mirror and recovery cache | `local-server.js` | Local runtime |
 | Enqueue client | Validate, classify, and route one card | `enqueue.js` | Shared agents |
 | Sync daemon | Keep the local mirror alive and exchange public cards/results | `docket-daemon.js`, `sync-cloud.js` | Local runtime |
 
@@ -42,14 +42,16 @@
 | `public/` | Browser UI and local rendering helpers | No | Yes |
 | `api/` | Cloud and shared storage handlers | No | Yes |
 | `test/` | Node test suite | No | Yes |
+| `scripts/` | Docket authority operations and live concurrency verifier | No | Yes |
 | `%USERPROFILE%\.docket-local` or `LOCAL_STORE_DIR` | Local `docket.sqlite3`, current JSON exports, and previous exports | Yes | No |
 | `C:\Users\dougl\Data\Projects\agent-harness\docket-outbox` | Credential-free card generation outbox | Yes | No |
-| `%PROJECT_DATA_SYNC_ROOT%\docket\sqlite\docket.sqlite3` | Immutable transactionally consistent SQLite snapshots, SHA-256 sidecars, and value-free metadata | Yes | Google Drive |
-| `C:\Users\dougl\.docket-local` | Local SQLite authority plus readable JSON exports | Yes | No |
+| `%PROJECT_DATA_SYNC_ROOT%\docket\sqlite\docket.sqlite3` | Optional legacy SQLite snapshots, SHA-256 sidecars, and value-free metadata | Yes | Google Drive |
+| `C:\Users\dougl\.docket-local` | Local SQLite compatibility mirror plus readable JSON exports | Yes | No |
+| `%PROJECT_DATA_ROOT%\docket\private\docket-cloud-exports` | Complete checksummed cloud-authority exports | Yes | No |
 
 ## Data flow
 
-Agents create value-free/public or sensitive card JSON. `enqueue.js` validates the schema and routes sensitive cards to the loopback mirror while public cards may cross the network boundary to Vercel. The local adapter writes SQLite and a portable JSON export in the same synchronous mutation path. `.agents\data\Sync-ProjectData.ps1` uses the installed shared harness to create or restore checksummed SQLite snapshots under `PROJECT_DATA_SYNC_ROOT`; Google Drive carries those immutable snapshots between computers. The browser reads pending items and submits decisions. Sync clients pull results into local durable state. Artifacts are resolved only through the documented artifact endpoint and configured root.
+Agents create card JSON and publish it through the authenticated API. `api/_schema.js` rejects malformed cards before storage. The private Vercel Blob store carries the four authoritative aggregates. Every mutation reads the current ETag and uses a conditional write; a conflict restarts the mutation against the current document. The browser reads pending items and submits decisions through the same authority. The project-owned data adapter exports all four documents with checksums and verifies restoration into an empty disposable target. The local SQLite server can mirror the same schema for compatibility and recovery work.
 
 ## Integrations
 
@@ -57,12 +59,12 @@ Agents create value-free/public or sensitive card JSON. `enqueue.js` validates t
 |---|---|---|---|
 | Vercel deployment | Both | `REVIEW_SECRET`, `APP_SECRET` | Authentication failure returns 401; client retains the local card |
 | Vercel Blob | Both | `BLOB_READ_WRITE_TOKEN` | API returns a storage error and does not claim success |
-| Local mirror | Both | `REVIEW_SECRET` | Loopback-only server; local store remains authoritative for sensitive cards |
+| Local mirror | Both | Loopback trust marker | Loopback-only compatibility and recovery surface |
 | Docket browser | Both | `REVIEW_SECRET` | Passcode prompt and local cached read state |
 
 ## Ownership and concurrency
 
-One agent owns each writable worktree. Parallel tasks receive distinct `LOCAL_STORE_DIR` paths and ports. Production Vercel deployment, production Blob data, the shared local store, and live card IDs are shared mutable resources and require explicit ownership. Tests use disposable local directories.
+One agent owns each writable worktree. Parallel tasks receive distinct `LOCAL_STORE_DIR` paths and ports. Production Vercel deployment, production Blob data, and live card IDs are shared mutable resources. Blob mutations use ETag compare-and-swap. Tests and restore exercises use isolated prefixes or disposable local directories.
 
 ## Update rule
 

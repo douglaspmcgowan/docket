@@ -1,11 +1,12 @@
 # Status
 
-- Git authority is `https://github.com/douglaspmcgowan/docket`; `master` includes archive-aware sync through merge `32d23467a4d491c4a22b037a7da560725ca76d3f`.
-- The canonical local store is `C:\Users\dougl\.docket-local\docket.sqlite3`, with current JSON exports and one previous export per document.
-- `data-manifest.yaml` routes that database through `.agents\data\Sync-ProjectData.ps1`; exports are transactionally consistent, checksummed snapshots under `%PROJECT_DATA_SYNC_ROOT%\docket`.
-- The local store contains 162 items. `setup-handoff--general-claude-github` and `setup-handoff--google-drive-preferences` are archived locally, leaving 160 unresolved items eligible for cloud publication.
-- Cloud sync excludes every local ID present in `results.json`. `enqueue.js --archive <id>` retires a preexisting cloud item only after validating the returned ID, archive flag, success flag, and answer timestamp.
-- The public API is live and fails closed without `APP_SECRET`; the loopback server trusts only validated local socket requests and requires no persistent local passcode.
-- Authenticated publication remains pending Bitwarden `REVIEW_SECRET` setup and the matching Vercel `APP_SECRET`. No credential values live in this repository.
-- The repository passes 84 Node tests, both offline self-tests, syntax checks, whitespace validation, and Gitleaks.
-- The current human setup and operations guide is `C:\Users\dougl\.agents\human-readable\README.md`.
+- Git authority is `https://github.com/douglaspmcgowan/docket`; the selected storage work is on `codex/docket-blob-hardening` from baseline `f3688602c02a7f0c96b70427f7d78d68cf43f4e1`.
+- The linked private Vercel Blob store is the current network authority for `items.json`, `results.json`, `tickets.json`, and `reads.json`.
+- Every API mutation uses compare-and-swap. The live isolated verifier observed an ETag conflict retry and preserved both concurrent writers, including Vercel's untyped conflicting-operation response.
+- Reads, writes, ingest, export, and restore validate the committed document schema. Invalid JSON and malformed records fail visibly.
+- A complete live export was created at `C:\Users\dougl\Data\Projects\docket\private\cloud-export-20260729-blob-hardening`; all four documents passed checksums, schema validation, and record-count verification.
+- That export passed a mutation-free dry run and a full restore into `C:\Users\dougl\Data\Projects\docket\runtime\restore-verification-20260729-blob-hardening`.
+- Production restore remains intentionally disabled in the adapter. Recovery proof uses an empty disposable target and cannot overwrite live data.
+- The local SQLite server remains a compatibility mirror and recovery cache with guarded transactions and readable JSON exports.
+- Credential values remain outside Git and agent output. Existing Vercel user authentication injects the Blob variable directly into the child verifier.
+- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 109 tests.

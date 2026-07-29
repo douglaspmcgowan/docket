@@ -11,3 +11,5 @@
 2026-07-27 | Repaired local API authentication with loopback socket validation and an unspoofable in-process marker; imported five setup handoffs; all 73 tests pass.
 2026-07-29 | Added archive-aware cloud publication and a verified single-card archive CLI; regression and assembled loopback coverage raise the suite to 84 tests.
 2026-07-29 | Added the shared-harness Docket SQLite snapshot adapter with checksum, restore-backup, and paths-with-spaces coverage.
+2026-07-29 | Hardened all four Vercel Blob aggregates with schema validation and ETag compare-and-swap; created and verified a complete live export; restored it into a disposable local target.
+2026-07-29 | Added complete export/restore adapters, atomic outbox imports, phone Playwright coverage, v3 harness state, and retry handling for Vercel's untyped conflict response; 109 tests and the live isolated CAS check pass.

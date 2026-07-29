@@ -1,8 +1,9 @@
 # vault-review-mobile
 
-Docket is a phone-accessible review, brief, and decision queue hosted on Vercel and backed by a
-private Vercel Blob store. The local SQLite store remains the personal authority. Authenticated
-sync publishes unresolved cards and pulls newer decisions back to the computer.
+Docket is a phone-accessible review, brief, and decision queue hosted on Vercel. Four private
+Vercel Blob documents are the network authority. Every mutation uses ETag compare-and-swap, so
+concurrent clients retry instead of silently overwriting one another. A local SQLite mirror remains
+available for compatibility and recovery work.
 
 ## Live system
 
@@ -22,6 +23,7 @@ Run these commands in PowerShell from this repository:
 
 ```powershell
 npm.cmd ci
+npm.cmd run browser:install
 node local-server.js
 ```
 
@@ -37,8 +39,8 @@ Cloud publication uses the Bitwarden broker workflow documented below. Keep cred
 of this repository, command arguments, shell history, logs, and documentation.
 
 ```text
-Local SQLite store -> authenticated push -> private Vercel Blob -> phone UI
-Local SQLite store <- validated decisions <- private Vercel Blob <- phone UI
+Agent or local mirror -> authenticated API -> private Vercel Blob authority -> phone UI
+Agent or local mirror <- validated outcomes <- private Vercel Blob authority <- phone UI
 ```
 
 ## Card grouping (Project -> Set -> Card)
@@ -59,8 +61,13 @@ Empty sets and projects hide automatically and reappear when matching cards retu
 - `api/submit.js` - POST a decision
 - `api/sync.js` - authenticated card push, decision pull, groups, reads, and tickets
 - `api/_auth.js` - bearer gate using Vercel `APP_SECRET`
-- `api/_store.js` - private Vercel Blob storage or local SQLite storage
+- `api/_store.js` - private Vercel Blob or local SQLite adapter
+- `api/_document-store.js` - compare-and-swap mutation engine and provider adapters
+- `api/_schema.js` - authoritative document and card validation
+- `api/_transfer.js` - complete export, checksum verification, and disposable restore
 - `public/index.html` - mobile interface and bearer prompt
+- `scripts/docket-data.js` - inspect, export, verify, and safe restore CLI
+- `.agents/data/Manage-DocketBlob.ps1` - reviewed project-data adapter declared by `data-manifest.yaml`
 - `enqueue.js` - publish, list, archive, group, and pull individual cards
 - `sync-cloud.js` - current local-store-to-cloud synchronization
 - `sync.js` - older `~\.claude\reviewer` directory adapter
@@ -240,32 +247,46 @@ A single-card `enqueue.js` publish succeeds only after the API acknowledges the 
 the content-derived card ID. Archive verification requires `enqueue.js --archive <id>` to receive a
 matching archived result and answer timestamp.
 
-## Local storage
+## Network authority, export, and recovery
 
-When `LOCAL_STORE_DIR` is set, Docket stores authoritative local documents in `docket.sqlite3`.
+The linked private Vercel Blob store contains exactly:
 
-### Cross-computer SQLite snapshots
+- `items.json`
+- `results.json`
+- `tickets.json`
+- `reads.json`
 
-`data-manifest.yaml` declares `.agents\data\Sync-ProjectData.ps1` as Docket's project-data adapter. The adapter keeps the working database under `LOCAL_STORE_DIR` (default `%USERPROFILE%\.docket-local`) and writes immutable transactionally consistent snapshots under `%PROJECT_DATA_SYNC_ROOT%\docket\sqlite\docket.sqlite3`. Each snapshot has a SHA-256 sidecar and value-free metadata. The shared helper keeps the five newest snapshots by default and preserves the current local database before a restore.
+`data-manifest.yaml` declares this store as the live document/object authority and names the
+project-owned adapter. A complete export includes all four documents, their source ETags, record
+counts, and SHA-256 checksums. Schema and inventory verification run before any restore.
 
 Agents run:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Status
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Export
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Sync-ProjectData.ps1 -Action Restore
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Inspect -Source Cloud
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Export -Source Cloud -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<new-export-folder>"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Verify -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<export-folder>"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.agents\data\Manage-DocketBlob.ps1 -Action Restore -ExportPath "$env:PROJECT_DATA_ROOT\docket\private\docket-cloud-exports\<export-folder>" -RestoreTarget "$env:PROJECT_DATA_ROOT\docket\runtime\<new-target>"
 ```
 
-The application should be stopped for restore. Export uses SQLite's online backup API and can capture a consistent committed state while the database is active.
-Every successful mutation also writes a readable `items.json`, `results.json`, `tickets.json`, or
-`reads.json` export. Before replacing an existing export, Docket preserves its prior state under
-`backups\<name>.previous.json`.
+The final command is a mutation-free dry run. Adding `-Disposable` writes only to an empty local
+target and verifies every restored document. Cloud restore is disabled in the adapter, which
+prevents an export test from overwriting live data.
 
-Existing JSON-only local stores migrate lazily: the first read imports each JSON document into
-SQLite. The JSON files remain portable recovery inputs. Vercel uses its private Blob store because
-a serverless local filesystem is ephemeral.
+The adapter uses the existing linked Vercel user session and `vercel env run`. Storage credentials
+stay inside the child process and never appear in command arguments or output.
 
-This command imports a validated card outbox into the local authority while preserving unrelated
+## Local SQLite compatibility mirror
+
+When `LOCAL_STORE_DIR` is set, Docket stores the same four documents in `docket.sqlite3`. The local
+adapter uses a guarded SQLite transaction and writes current JSON exports plus the immediately
+previous export. Existing JSON-only local stores migrate lazily on first read.
+
+The older `.agents\data\Sync-ProjectData.ps1` remains available for transactionally consistent
+SQLite snapshots. It is a compatibility recovery path; the network authority named in
+`data-manifest.yaml` reconstructs a new computer directly.
+
+This command imports a validated card outbox into the local compatibility mirror while preserving unrelated
 items:
 
 ```powershell
@@ -279,3 +300,7 @@ The default paths target the shared Skills Docket outbox and `~\.docket-local`.
 Open <https://vault-review-mobile.vercel.app>, paste the `REVIEW_SECRET` value from Bitwarden once,
 and triage cards. The browser stores the bearer locally. Completed cards leave the active board,
 and the next brokered sync applies valid newer decisions to the local store.
+
+Repository documentation opens on a phone through GitHub web links. Windows paths such as
+`C:\Users\...` open only on a Windows computer. Recovery exports live outside Git and need a cloud
+provider link when they must be viewed or downloaded from a phone.

@@ -9,6 +9,7 @@
 !/api/
 !/public/
 !/test/
+!/scripts/
 !/.agents/
 !/.cursor/
 !/.github/
@@ -39,12 +40,10 @@
 !/.gitleaks.toml
 !/AGENTS.md
 !/CLAUDE.md
-!/CURRENT-TASK.md
-!/WORK_QUEUE.md
 !/STATUS.md
 !/LOG.md
 !/BACKBURNER.md
-!/VERIFY.md
+!/TASK.md
 !/MAP.md
 !/DESIGN.md
 !/MEMORY.md

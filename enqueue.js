@@ -26,7 +26,7 @@ const hash8 = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 const LOCAL_URL = 'http://127.0.0.1:8471';
 const CLOUD_URL = 'https://vault-review-mobile.vercel.app';
-// A board url is "local" (safe for sensitive cards) only if it points at loopback.
+// A board URL is local only when it points at loopback.
 const isLocalUrl = u => /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/i.test(String(u));
 
 // Pure: read a brief's src file into an inline body (the cloud can't reach the local path), keeping
@@ -185,7 +185,7 @@ function parseArgs(argv) {
       case '--kind': o.kind = next(); break;
       case '--blocking': o.blocking = true; break;
       case '--public': o.sensitive = false; break;   // non-sensitive -> may go to the cloud
-      case '--sensitive': o.sensitive = true; break;  // explicit; also the default
+      case '--sensitive': o.sensitive = true; break; // explicit legacy local-first marker
       case '--url': o.url = next(); break;
       case '--file': o.file = next(); break;
       case '--groups': o.groups = true; break;
@@ -362,9 +362,8 @@ async function main() {
 
   const envelope = buildCard(card);
 
-  // Route by sensitivity. If the caller didn't force a --url/REVIEW_URL: a SENSITIVE card (the default)
-  // goes to the LOCAL mirror; a public card goes to the cloud. A sensitive card may NEVER be pushed to a
-  // non-local board — refuse it here (the cloud also refuses server-side, defense in depth).
+  // Personal cards publish to the authenticated cloud by default. The explicit legacy
+  // local-first marker remains confined to a loopback board.
   const explicitUrl = o.url || process.env.REVIEW_URL;
   const url = explicitUrl || (envelope.sensitive ? LOCAL_URL : CLOUD_URL);
   if (envelope.sensitive && !isLocalUrl(url)) {

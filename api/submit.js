@@ -2,7 +2,7 @@
 // POST /api/submit { id, notes } (no chosen)          -> comment-only: resolve with a note, no option picked.
 // POST /api/submit { id, archived:true }              -> archive (clear from the board without deciding).
 // items.js filters out anything with a result, so any of these removes the card from the pending board.
-const { readItems, readResults, writeResults } = require('./_store');
+const { readItems, updateResults } = require('./_store');
 const { resolveResult } = require('./_resolve');
 const authed = require('./_auth');
 
@@ -18,10 +18,11 @@ module.exports = async function handler(req, res) {
     if (!item) return res.status(404).json({ error: 'unknown id' });
     const { error, message, result } = resolveResult(body, item);
     if (error) return res.status(error).json({ error: message });
-    const results = await readResults();
-    results[id] = result;
-    await writeResults(results);
-    res.status(200).json({ ok: true, result });
+    const outcome = await updateResults(results => {
+      results[id] = result;
+      return { document: results, result };
+    });
+    res.status(200).json({ ok: true, result: outcome.result });
   } catch (e) {
     res.status(500).json({ error: String((e && e.message) || e) });
   }

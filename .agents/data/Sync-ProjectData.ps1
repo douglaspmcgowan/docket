@@ -6,6 +6,8 @@ param(
 
     [string]$LocalStoreDir = $env:LOCAL_STORE_DIR,
 
+    [string]$LocalDataRoot = $env:PROJECT_DATA_ROOT,
+
     [string]$SyncRoot = $env:PROJECT_DATA_SYNC_ROOT,
 
     [string]$SnapshotPath,
@@ -28,6 +30,7 @@ $arguments = @{
     Action = $Action
     ProjectName = 'docket'
     DatabasePath = (Join-Path $LocalStoreDir 'docket.sqlite3')
+    LocalDataRoot = $LocalDataRoot
     SyncRoot = $SyncRoot
 }
 if ($SnapshotPath) { $arguments.SnapshotPath = $SnapshotPath }

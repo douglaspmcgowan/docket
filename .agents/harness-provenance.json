@@ -1,0 +1,82 @@
+{
+    "schemaVersion":  1,
+    "authority":  "agent-harness/portable-project-contract/v3",
+    "files":  [
+                  {
+                      "path":  "AGENTS.md",
+                      "sha256":  "43c12eb15a31c874b142dce86495fe69eee4e87f6be3e1a70dd855273b0318e6"
+                  },
+                  {
+                      "path":  "CLAUDE.md",
+                      "sha256":  "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
+                  },
+                  {
+                      "path":  ".cursor\\rules\\00-project-contract.mdc",
+                      "sha256":  "65ae2ca5698da39cf83896c235b961af81fdc421637152e82eb1aea2d764a50b"
+                  },
+                  {
+                      "path":  "DESIGN.md",
+                      "sha256":  "5ff4dd6e7c620e1e616c5e200f9ff7fa7bf68de636f01a05391f8521f4808063"
+                  },
+                  {
+                      "path":  "MAP.md",
+                      "sha256":  "0491fb632322e4b6bfcd5cda918e072dfd9dc022670b77d242ae5e0bc1bacaed"
+                  },
+                  {
+                      "path":  "TASK.md",
+                      "sha256":  "85737caf5e54be7fa7f04c9f062c45b668ccccaa77c4c3bc741b36080c1980ea"
+                  },
+                  {
+                      "path":  "STATUS.md",
+                      "sha256":  "5713405dc5fe040a8294a10a0a96b8a83844378463ebccdc99667d8a48a022e3"
+                  },
+                  {
+                      "path":  "LOG.md",
+                      "sha256":  "420f704b02a822f8cc50ed3584a4fa7f5786799cfcfb971d7d110e834bed181f"
+                  },
+                  {
+                      "path":  "BACKBURNER.md",
+                      "sha256":  "aa1b1e41534db7ceb09ac0c4456de3d0a7d74a98cb7373f3929f3f5a1d00cf96"
+                  },
+                  {
+                      "path":  "MEMORY.md",
+                      "sha256":  "e6dde9741fc41cd99f2de61c30df7e1fafea0cbae4b9764569089c52527408a0"
+                  },
+                  {
+                      "path":  "skills-manifest.json",
+                      "sha256":  "fd6385edc151d35bc7ad617a9aaaaf66a5be0ebba25f9aa3ca5c115cdf40bc15"
+                  },
+                  {
+                      "path":  "data-manifest.yaml",
+                      "sha256":  "cfa32df88816684594b0c84af1bdc83b9135fbaa1f7da47ec104874811b8b44d"
+                  },
+                  {
+                      "path":  "secret-manifest.json",
+                      "sha256":  "7c8440806e9dac2508f8e6676d0fddd0c6bb18d0a2f5d53df0b689e0e1bf79a2"
+                  },
+                  {
+                      "path":  "secret-manifest.md",
+                      "sha256":  "bcd7d1c3db937d8506a85af494a47fa4bdc4c63767d6a29a6bf9f31d1d6fe382"
+                  },
+                  {
+                      "path":  ".env.example",
+                      "sha256":  "751a4a8b9580892f5a75328d593d43806317234e16acaf786d48d2641a753422"
+                  },
+                  {
+                      "path":  ".gitleaks.toml",
+                      "sha256":  "728ef3b38e30fcccc7af59aae7867f43b6527f1a75f24d964ea583356e187ed7"
+                  },
+                  {
+                      "path":  ".github\\workflows\\gitleaks.yml",
+                      "sha256":  "2bd175a00187b54afa584df3f118e5956b5940f96b3fae84907fbea9e6c66a66"
+                  },
+                  {
+                      "path":  ".agents\\feedback\\FEEDBACK-LOG.md",
+                      "sha256":  "19e70544df3cd87a7ea5e38629a4442a6d58f8fd20a19838ab306f36b079cee7"
+                  },
+                  {
+                      "path":  ".agents\\skill-pathways.json",
+                      "sha256":  "0354ef7fccab6a2e50d35c3b1cd883f044916e5879757b0ec60851dbce354f65"
+                  }
+              ]
+}
