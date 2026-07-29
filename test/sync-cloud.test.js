@@ -12,6 +12,28 @@ test('bulk sync includes every valid local card', () => {
   assert.deepEqual(syncItems(items).map(item => item.id), ['public', 'legacy-sensitive', 'unmarked']);
 });
 
+test('bulk sync excludes locally archived cards', () => {
+  const items = {
+    active: { id: 'active' },
+    archived: { id: 'archived' },
+  };
+  const results = {
+    archived: { id: 'archived', archived: true, answered_at: '2026-07-29T00:00:00Z' },
+  };
+  assert.deepEqual(syncItems(items, results).map(item => item.id), ['active']);
+});
+
+test('bulk sync excludes locally decided cards', () => {
+  const items = {
+    active: { id: 'active' },
+    decided: { id: 'decided' },
+  };
+  const results = {
+    decided: { id: 'decided', chosen: 'Approve', answered_at: '2026-07-29T00:00:00Z' },
+  };
+  assert.deepEqual(syncItems(items, results).map(item => item.id), ['active']);
+});
+
 test('decision pull accepts only known, timestamped card decisions', () => {
   const items = { known: { id: 'known' } };
   const result = mergeCloudDecisions([

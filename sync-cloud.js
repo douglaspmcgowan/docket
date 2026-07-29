@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Cloud auto-sync FROM the personal local store. The authenticated cloud and local mirror carry
 // the same card set. Each run:
-//   1. push every valid local card to the cloud (upsert by id)
+//   1. push every valid unresolved local card to the cloud (upsert by id)
 //   2. pull decisions for known local cards and merge only newer, well-formed results
 //   node sync-cloud.js            # one sync pass
 //   node sync-cloud.js --selftest # offline check of the load-bearing filter
@@ -28,8 +28,12 @@ function writeLocal(name, obj) {
   fs.writeFileSync(tmp, JSON.stringify(obj)); fs.renameSync(tmp, dst);   // atomic swap
 }
 
-function syncItems(items) {
-  return Object.values(items || {}).filter(it => it && typeof it.id === 'string' && it.id.length > 0);
+function syncItems(items, results) {
+  const resolved = results && typeof results === 'object' ? results : {};
+  return Object.values(items || {}).filter(it =>
+    it && typeof it.id === 'string' && it.id.length > 0 &&
+    !Object.prototype.hasOwnProperty.call(resolved, it.id)
+  );
 }
 
 function mergeCloudDecisions(cloudResults, localResults, localItems) {
@@ -54,7 +58,8 @@ function mergeCloudDecisions(cloudResults, localResults, localItems) {
 async function syncOnce() {
   const sec = secret();
   const items = readLocal('items.json');
-  const outbound = syncItems(items);
+  const local = readLocal('results.json');
+  const outbound = syncItems(items, local);
 
   let pushed = 0;
   if (outbound.length) {
@@ -72,7 +77,6 @@ async function syncOnce() {
   const r2 = await fetch(CLOUD_URL + '/api/sync?op=pull', { headers: { Authorization: 'Bearer ' + sec } });
   if (!r2.ok) throw new Error('cloud pull failed ' + r2.status + ' ' + await r2.text());
   const cloudResults = (await r2.json()).results || [];
-  const local = readLocal('results.json');
   const decisionMerge = mergeCloudDecisions(cloudResults, local, items);
   if (decisionMerge.pulled) writeLocal('results.json', decisionMerge.merged);
   return { pushed, pulled: decisionMerge.pulled, refusedDecisions: decisionMerge.refused };
@@ -82,6 +86,7 @@ if (process.argv.includes('--selftest')) {
   const assert = require('assert');
   const items = { a: { id: 'a', sensitive: false }, b: { id: 'b', sensitive: true }, c: { id: 'c' }, d: { id: 'd', sensitive: 'yes' } };
   assert.deepEqual(syncItems(items).map(x => x.id), ['a', 'b', 'c', 'd'], 'every local card must sync');
+  assert.deepEqual(syncItems(items, { b: { id: 'b', archived: true } }).map(x => x.id), ['a', 'c', 'd'], 'resolved local cards must not sync');
   assert.equal(syncItems({ bad: null, blank: { id: '' } }).length, 0, 'invalid cards must be skipped');
   const guarded = mergeCloudDecisions(
     [{ id: 'a', answered_at: '2026-07-29T00:00:00Z' }, { id: 'unknown', answered_at: '2026-07-29T00:00:00Z' }],

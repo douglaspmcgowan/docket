@@ -177,6 +177,9 @@ function parseArgs(argv) {
         o.list = (argv[i + 1] && !argv[i + 1].startsWith('--')) ? next() : true; break;
       case '--pull':                                 // RECEIVE Douglas's decisions (op=pull), optionally filtered by id substring
         o.pull = (argv[i + 1] && !argv[i + 1].startsWith('--')) ? next() : true; break;
+      case '--archive':
+        if (!argv[i + 1] || argv[i + 1].startsWith('--')) throw new Error('--archive needs a card id');
+        o.archive = next(); break;
       case '--link': o.link = next(); break;
       case '--type': o.type = next(); break;
       case '--kind': o.kind = next(); break;
@@ -211,6 +214,24 @@ async function push(card, url, secret) {
   return r.json();
 }
 
+async function archiveCard(id, url, secret, fetchFn = fetch) {
+  if (typeof id !== 'string' || !id.trim()) throw new Error('--archive needs a card id');
+  const cardId = id.trim();
+  const r = await fetchFn(url.replace(/\/$/, '') + '/api/submit', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: cardId, archived: true }),
+  });
+  if (!r.ok) throw new Error('archive failed ' + r.status + ' ' + await r.text());
+  const body = await r.json();
+  const result = body && body.result;
+  if (!body || body.ok !== true || !result || result.id !== cardId ||
+      result.archived !== true || typeof result.answered_at !== 'string' || !result.answered_at) {
+    throw new Error('archive acknowledgement did not match ' + cardId);
+  }
+  return result;
+}
+
 function readStdin() {
   try { return fs.readFileSync(0, 'utf8'); } catch { return ''; }
 }
@@ -224,6 +245,7 @@ const HELP = `enqueue.js — push one review card to the phone board.
   --id <id>          reuse an existing card's id -> UPDATE it in place (instead of adding a new card)
   --list [project]   list existing cards (id + kind + group + title) to find an id to --id-update
   --pull [idsub]     RECEIVE Douglas's decisions (op=pull), optionally filtered to ids containing <idsub>
+  --archive <id>     archive one existing card and verify the returned result
   --link <url>       adds a Source section
   --blocking         mark as blocking
   --public           explicitly mark public (the default)
@@ -238,6 +260,13 @@ const HELP = `enqueue.js — push one review card to the phone board.
 async function main() {
   const o = parseArgs(process.argv.slice(2));
   if (o.help) { console.log(HELP); return; }
+
+  if (o.archive !== undefined) {
+    const url = (o.url || process.env.REVIEW_URL || CLOUD_URL).replace(/\/$/, '');
+    const result = await archiveCard(o.archive, url, resolveSecret());
+    console.log('archived ' + result.id + '  @ ' + url);
+    return;
+  }
 
   // Surface the canonical project/set names already on the board, so a docket reuses them instead of
   // spawning near-duplicate groups. Read-only GET.
@@ -355,4 +384,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
-module.exports = { buildCard, resolveBriefBody, slug, hash8, filterResults, outcomeOf, resolveSensitive, isLocalUrl };
+module.exports = { buildCard, resolveBriefBody, slug, hash8, filterResults, outcomeOf, resolveSensitive, isLocalUrl, archiveCard };

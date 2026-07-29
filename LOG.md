@@ -9,3 +9,4 @@
 2026-07-27 | Confirmed the Codex GitHub connector account and repository absence; repository creation remains at the interactive CLI/browser sign-in boundary because the connector exposes no create-repository action.
 2026-07-27 | Published the private Docket repository, verified its clean lowercase clone with 69 tests and Gitleaks, and installed the limited-privilege DocketDaemon logon task with an HTTP 200 loopback check.
 2026-07-27 | Repaired local API authentication with loopback socket validation and an unspoofable in-process marker; imported five setup handoffs; all 73 tests pass.
+2026-07-29 | Added archive-aware cloud publication and a verified single-card archive CLI; regression and assembled loopback coverage raise the suite to 84 tests.
