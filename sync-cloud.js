@@ -1,11 +1,8 @@
 #!/usr/bin/env node
-// Cloud auto-sync FROM the local store. The local mirror (~/.docket-local) is the single source of
-// truth (the superset); the cloud holds only the non-sensitive subset. Each run:
-//   1. push every EXPLICITLY-public local card (sensitive===false) up to the cloud (upsert by id)
-//   2. pull the cloud's decisions back down, merged into the local results store
-// A card reaches the cloud ONLY if it is explicitly sensitive:false. Unmarked/legacy cards (no field)
-// are treated as SENSITIVE (fail-safe) and never leave the machine — stricter than the cloud's own
-// backward-compat guard on purpose, because pre-flag cards' sensitivity is unknown.
+// Cloud auto-sync FROM the personal local store. The authenticated cloud and local mirror carry
+// the same card set. Each run:
+//   1. push every valid local card to the cloud (upsert by id)
+//   2. pull decisions for known local cards and merge only newer, well-formed results
 //   node sync-cloud.js            # one sync pass
 //   node sync-cloud.js --selftest # offline check of the load-bearing filter
 const fs = require('fs');
@@ -31,22 +28,40 @@ function writeLocal(name, obj) {
   fs.writeFileSync(tmp, JSON.stringify(obj)); fs.renameSync(tmp, dst);   // atomic swap
 }
 
-// Pure, load-bearing: which local items may go to the cloud — ONLY explicitly non-sensitive ones.
-// sensitive===true (sensitive) and sensitive==null (unmarked/legacy, unknown => fail-safe) are withheld.
-function publicItems(items) {
-  return Object.values(items || {}).filter(it => it && it.sensitive === false);
+function syncItems(items) {
+  return Object.values(items || {}).filter(it => it && typeof it.id === 'string' && it.id.length > 0);
+}
+
+function mergeCloudDecisions(cloudResults, localResults, localItems) {
+  const merged = { ...(localResults || {}) };
+  let pulled = 0, refused = 0;
+  for (const result of cloudResults || []) {
+    if (!result || typeof result.id !== 'string' || !result.id ||
+        typeof result.answered_at !== 'string' || !result.answered_at ||
+        !localItems || !Object.prototype.hasOwnProperty.call(localItems, result.id)) {
+      refused++;
+      continue;
+    }
+    const current = merged[result.id];
+    if (!current || String(result.answered_at) > String(current.answered_at || '')) {
+      merged[result.id] = result;
+      pulled++;
+    }
+  }
+  return { merged, pulled, refused };
 }
 
 async function syncOnce() {
   const sec = secret();
-  const pub = publicItems(readLocal('items.json'));
+  const items = readLocal('items.json');
+  const outbound = syncItems(items);
 
   let pushed = 0;
-  if (pub.length) {
+  if (outbound.length) {
     const r = await fetch(CLOUD_URL + '/api/sync?op=push', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + sec, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: pub }),
+      body: JSON.stringify({ items: outbound }),
     });
     if (!r.ok) throw new Error('cloud push failed ' + r.status + ' ' + await r.text());
     pushed = (await r.json()).pushed || 0;
@@ -58,31 +73,30 @@ async function syncOnce() {
   if (!r2.ok) throw new Error('cloud pull failed ' + r2.status + ' ' + await r2.text());
   const cloudResults = (await r2.json()).results || [];
   const local = readLocal('results.json');
-  let pulled = 0;
-  for (const res of cloudResults) {
-    if (!res || typeof res.id !== 'string') continue;
-    const cur = local[res.id];
-    if (!cur || String(res.answered_at || '') > String(cur.answered_at || '')) { local[res.id] = res; pulled++; }
-  }
-  if (pulled) writeLocal('results.json', local);
-  return { pushed, pulled };
+  const decisionMerge = mergeCloudDecisions(cloudResults, local, items);
+  if (decisionMerge.pulled) writeLocal('results.json', decisionMerge.merged);
+  return { pushed, pulled: decisionMerge.pulled, refusedDecisions: decisionMerge.refused };
 }
-// ponytail: upsert-only — a card deleted/archived locally isn't removed from the cloud. Add a delete
-// pass only if stale cloud cards ever become a problem.
 
 if (process.argv.includes('--selftest')) {
   const assert = require('assert');
   const items = { a: { id: 'a', sensitive: false }, b: { id: 'b', sensitive: true }, c: { id: 'c' }, d: { id: 'd', sensitive: 'yes' } };
-  const pub = publicItems(items).map(x => x.id);
-  assert.deepEqual(pub, ['a'], 'only explicit sensitive===false may sync to cloud; got ' + JSON.stringify(pub));
-  assert.equal(publicItems({}).length, 0, 'empty store -> nothing to push');
+  assert.deepEqual(syncItems(items).map(x => x.id), ['a', 'b', 'c', 'd'], 'every local card must sync');
+  assert.equal(syncItems({ bad: null, blank: { id: '' } }).length, 0, 'invalid cards must be skipped');
+  const guarded = mergeCloudDecisions(
+    [{ id: 'a', answered_at: '2026-07-29T00:00:00Z' }, { id: 'unknown', answered_at: '2026-07-29T00:00:00Z' }],
+    {},
+    items
+  );
+  assert.equal(guarded.pulled, 1, 'a known decision must merge');
+  assert.equal(guarded.refused, 1, 'an unknown decision must be refused');
   console.log('sync-cloud selftest OK');
   process.exit(0);
 }
 
 if (require.main === module) {
   syncOnce()
-    .then(r => console.log(`sync: pushed ${r.pushed} public card(s), pulled ${r.pulled} decision(s)  @ ${CLOUD_URL}`))
+    .then(r => console.log(`sync: pushed ${r.pushed} card(s), pulled ${r.pulled} decision(s), refused ${r.refusedDecisions} invalid/unknown decision(s)  @ ${CLOUD_URL}`))
     .catch(e => { console.error(e.message); process.exit(1); });
 }
-module.exports = { syncOnce, publicItems };
+module.exports = { syncOnce, syncItems, mergeCloudDecisions };

@@ -43,13 +43,12 @@ function resolveBriefBody(o, readFile) {
   return out;
 }
 
-// Pure: resolve a card's sensitivity. DEFAULT TRUE (fail-safe) — a card is sensitive unless something
-// explicitly marks it public (--public / "sensitive":false). NASA-sensitive content stays on the local
-// mirror; only sensitive:false cards may reach the cloud. Precedence: explicit CLI arg > card field > default true.
+// Pure: preserve an explicit legacy local-first marker. Personal Docket cards publish to the
+// authenticated cloud by default. Precedence: explicit CLI arg > card field > default false.
 function resolveSensitive(o, base) {
   if (o.sensitive != null) return o.sensitive !== false;
   if (base && base.sensitive != null) return base.sensitive !== false;
-  return true;
+  return false;
 }
 
 // Pure: turn options into a normalized card envelope matching the reviewer schema. No I/O.
@@ -227,8 +226,8 @@ const HELP = `enqueue.js — push one review card to the phone board.
   --pull [idsub]     RECEIVE Douglas's decisions (op=pull), optionally filtered to ids containing <idsub>
   --link <url>       adds a Source section
   --blocking         mark as blocking
-  --public           mark NON-sensitive -> routes to the cloud (+ mirrors to local). Default is sensitive.
-  --sensitive        mark sensitive (the default) -> local mirror only; refused on the cloud
+  --public           explicitly mark public (the default)
+  --sensitive        legacy local-first marker; the authenticated bulk sync still publishes the card
   --type <t>         default: reviewer
   --file <path>      read a full JSON card (merged with generated id/submitted_at)
   --file -           read that JSON card from stdin
@@ -303,10 +302,10 @@ async function main() {
     assert(filterResults([{ id: 'a', answered_at: '1' }, { id: 'b', answered_at: '2' }], null)[0].id === 'b', 'pull: newest answered first');
     assert(outcomeOf({ action: 'more' }).startsWith('MORE'), 'pull: more outcome label');
     assert(outcomeOf({ chosen: 'Ship' }) === 'chose: Ship', 'pull: chosen outcome label');
-    // sensitivity routing: default sensitive (fail-safe); --public flips it; explicit field respected
-    assert(c.sensitive === true, 'default card must be sensitive (fail-safe)');
+    // Personal Docket publishes by default while preserving explicit legacy local-first markers.
+    assert(c.sensitive === false, 'default card must publish');
     assert(buildCard({ title: 'T', sensitive: false }).sensitive === false, '--public/sensitive:false must mark non-sensitive');
-    assert(buildCard({ kind: 'brief', title: 'B', body: 'x' }).sensitive === true, 'brief defaults sensitive');
+    assert(buildCard({ kind: 'brief', title: 'B', body: 'x' }).sensitive === false, 'brief publishes by default');
     assert(buildCard({ kind: 'decision', title: 'D', sensitive: false }).sensitive === false, 'decision honors sensitive:false');
     assert(buildCard({ card: { title: 'A', sensitive: false } }).sensitive === false, 'card-field sensitive:false respected');
     assert(isLocalUrl('http://127.0.0.1:8471') && isLocalUrl('http://localhost:8471/'), 'loopback urls are local');
