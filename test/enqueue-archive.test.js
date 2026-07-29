@@ -117,6 +117,40 @@ test('archiveCard rejects an acknowledgement without archived:true', async () =>
   );
 });
 
+test('archiveCard rejects an acknowledgement without ok:true', async () => {
+  const fetchFn = async () => response({
+    body: {
+      result: {
+        id: 'stale-card',
+        archived: true,
+        answered_at: '2026-07-29T00:00:00Z',
+      },
+    },
+  });
+
+  await assert.rejects(
+    archiveCard('stale-card', 'https://example.test', 'secret-value', fetchFn),
+    /archive acknowledgement did not match stale-card/,
+  );
+});
+
+test('archiveCard rejects an acknowledgement without an answer timestamp', async () => {
+  const fetchFn = async () => response({
+    body: {
+      ok: true,
+      result: {
+        id: 'stale-card',
+        archived: true,
+      },
+    },
+  });
+
+  await assert.rejects(
+    archiveCard('stale-card', 'https://example.test', 'secret-value', fetchFn),
+    /archive acknowledgement did not match stale-card/,
+  );
+});
+
 test('enqueue --archive rejects a missing card id', () => {
   const cli = spawnSync(
     process.execPath,
