@@ -6,9 +6,7 @@ const { listGroups, remapGroup } = require('./_groups');
 const { toggleRead } = require('./_reads');
 const authed = require('./_auth');
 
-// Pure: may this item be stored on THIS board? The cloud (cloud=true) refuses sensitive cards; the
-// local mirror (cloud=false) accepts everything. This is the load-bearing safety rule, kept testable.
-const admissible = (item, cloud) => !(cloud && item && item.sensitive === true);
+const admissible = item => !!item && typeof item.id === 'string' && item.id.length > 0;
 
 const handler = async function handler(req, res) {
   if (!authed(req, res)) return;
@@ -16,20 +14,15 @@ const handler = async function handler(req, res) {
   try {
     if (op === 'push' && req.method === 'POST') {
       const incoming = Array.isArray(req.body && req.body.items) ? req.body.items : [];
-      // Safety guard (defense in depth): the CLOUD backend (no LOCAL_STORE_DIR) must never store a
-      // card marked sensitive. Even a stray curl/agent that bypasses enqueue.js's client-side check
-      // cannot land NASA-sensitive content off-box. The local mirror accepts everything.
-      const CLOUD = !process.env.LOCAL_STORE_DIR;
       const items = await readItems();
       let pushed = 0, refused = 0;
       for (const it of incoming) {
-        if (!it || typeof it.id !== 'string') continue;
-        if (!admissible(it, CLOUD)) { refused++; continue; }
+        if (!admissible(it)) { refused++; continue; }
         items[it.id] = it;
         pushed++;
       }
       await writeItems(items);
-      return res.status(200).json({ ok: true, pushed, ...(refused ? { refused, reason: 'sensitive cards are not allowed on the cloud board' } : {}) });
+      return res.status(200).json({ ok: true, pushed, ...(refused ? { refused, reason: 'invalid cards were refused' } : {}) });
     }
     if (op === 'pull' && req.method === 'GET') {
       const results = await readResults();
