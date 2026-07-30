@@ -9,8 +9,11 @@
                         ],
     "bindings":  [
                      {
-                         "name":  "feedback",
-                         "reason":  "Durable correction routing is required across local and cloud agents.",
+                         "capability":  "feedback",
+                         "canonical":  [
+                                           "feedback"
+                                       ],
+                         "reason":  "Compatibility alias for durable correction routing across local and cloud agents.",
                          "cloudRequired":  true,
                          "delivery":  "vendored"
                      },

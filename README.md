@@ -78,8 +78,8 @@ Empty sets and projects hide automatically and reappear when matching cards retu
 
 | Name | Why it exists | Who creates it | Where it lives |
 |---|---|---|---|
-| `REVIEW_SECRET` | Authenticates local publishers, synchronizers, and the phone UI to the public Docket API. | The existing Bitwarden `Agents` organization owns one `docket.REVIEW_SECRET` record in `Agent Runtime`. | Bitwarden Secrets Manager; injected only into allowlisted Docket child processes. |
-| `APP_SECRET` | Gives the Vercel API the expected bearer value for request comparison. | The approved broker streams the existing `docket.REVIEW_SECRET` value to Vercel through standard input. | Vercel project environment variable, scoped to Production and marked Sensitive. Preview receives the same value only when preview deployments need access. |
+| `REVIEW_SECRET` | Authenticates local publishers, synchronizers, and the phone UI to the public Docket API. | The existing Bitwarden `Agents` organization owns the `REVIEW_SECRET` resource in `Agent Runtime`. | Bitwarden Secrets Manager; injected only into allowlisted Docket child processes. |
+| `APP_SECRET` | Gives the Vercel API the expected bearer value for request comparison. | The approved broker streams the existing `REVIEW_SECRET` value to Vercel through standard input. | Vercel project environment variable, scoped to Production and marked Sensitive. Preview receives the same value only when preview deployments need access. |
 | `BLOB_READ_WRITE_TOKEN` | Authenticates legacy token-based reads and writes to the private Blob store. | Vercel generates it when a token-based store is created or connected. | Vercel project environment. |
 | `REVIEW_URL` | Identifies the cloud API base URL. | Vercel assigns the deployment URL. | Public configuration; defaults to `https://vault-review-mobile.vercel.app` in current clients. |
 
@@ -96,7 +96,7 @@ supports OIDC. See Vercel's
 
 ## Bitwarden Secrets Manager setup
 
-1. Reuse the `Agents` organization, `Agent Runtime` project, and `docket.REVIEW_SECRET`. Verify their value-free IDs before any creation action.
+1. Reuse the `Agents` organization, `Agent Runtime` project, and `REVIEW_SECRET` resource. Verify their value-free IDs before any creation action.
 2. Grant a per-computer, read-only machine account access to `Agent Runtime`.
 3. Store the machine-account token in Windows Credential Manager:
 

@@ -6,7 +6,12 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 
 ## Active
 
-<!-- No active Docket implementation task. -->
+- [x] Reconcile stale portable-contract provenance and generated secret-manifest output reported by the installed shared verifier. | evidence: project verifier and 11-variable generated-manifest check pass | owner: project harness | class: MAIN.
+  - [x] Preserve the existing functionally equivalent fixed-path Gitleaks hook, install the canonical portable hook, and verify staged scanning remains fail-closed. | evidence: timestamped backup `pre-commit-20260730-034521`; installed/canonical SHA-256 match | owner: local Git hook | class: SEQUENTIAL.
+- [x] Reconcile active Docket documentation with the existing Bitwarden Secrets Manager resource display name `REVIEW_SECRET`. | evidence: active-reference scan is clean | owner: documentation | class: MAIN.
+- [x] Replace the stale project `feedback` workflow with the current canonical compatibility alias to `correct`. | evidence: manifest now declares canonical `feedback`; installed `SyncProject` replaced the stale tree and project verification passes | owner: skill portability | class: MAIN.
+- [x] Run the complete Docket verification chain and repeat the brokered publish/pull sync. | evidence: 132 tests, adapter and phone suites, syntax/self-tests, live two-writer retry, project verifier, and 160-card brokered sync pass | owner: release | class: SEQUENTIAL.
+- [~] Publish the verified reconciliation and confirm GitHub checks. | after: final provenance refresh and security gates | evidence: clean commit, pull request checks, merged master verifier | owner: release | class: SEQUENTIAL.
 
 ## Queue
 
@@ -30,7 +35,7 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 - [x] Disable legacy passcode-reading wrappers with exact BWS broker guidance.
 - [x] Update migration documentation and durable task state.
 - [x] Run the full verification chain, commit, and push the follow-up.
-- [x] Reuse the existing Bitwarden `Agents` organization, `Agent Runtime` project, `docket.REVIEW_SECRET`, and machine account without creating duplicates.
+- [x] Reuse the existing Bitwarden `Agents` organization, `Agent Runtime` project, `REVIEW_SECRET` resource, and machine account without creating duplicates.
 - [x] Align Vercel `APP_SECRET` through the allowlisted stdin-only broker command and redeploy production.
 - [x] Normalize Vercel Blob weak ETags before conditional writes and verify the live concurrency path.
 - [x] Publish 160 unresolved local cards through the broker and verify a second repeatable sync; no newer known cloud decision required a local merge.
@@ -42,7 +47,6 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 ## Needs decision
 
 - [?] Douglas may later replace the selected Vercel Blob authority; the current implementation and design record keep that choice reversible.
-- [!] The shared project-state verifier reports the repository's inherited missing `VERIFY.md`; this Docket branch did not create a new project verification contract.
 
 ## Completed
 
@@ -73,4 +77,4 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: push the verified master commit and confirm its GitHub checks.
+- Next: commit and push the verified reconciliation, confirm GitHub checks, merge it, and rerun the project verifier on merged master.
