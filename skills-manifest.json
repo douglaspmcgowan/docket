@@ -9,7 +9,10 @@
                         ],
     "bindings":  [
                      {
-                         "name":  "feedback",
+                         "capability":  "correct",
+                         "canonical":  [
+                                           "correct"
+                                       ],
                          "reason":  "Durable correction routing is required across local and cloud agents.",
                          "cloudRequired":  true,
                          "delivery":  "vendored"
@@ -118,13 +121,6 @@
                          "capability":  "spec",
                          "canonical":  [
                                            "source-command-spec"
-                                       ],
-                         "delivery":  "vendored"
-                     },
-                     {
-                         "capability":  "correct",
-                         "canonical":  [
-                                           "correct"
                                        ],
                          "delivery":  "vendored"
                      }
