@@ -12,27 +12,27 @@
                   },
                   {
                       "path":  ".cursor\\rules\\00-project-contract.mdc",
-                      "sha256":  "65ae2ca5698da39cf83896c235b961af81fdc421637152e82eb1aea2d764a50b"
+                      "sha256":  "4a0980e0678eb90b23d2174f61997b6bf60d717f82b8a7a648692eb7fa1c56e3"
                   },
                   {
                       "path":  "DESIGN.md",
-                      "sha256":  "a92a98cd913dd8550a8b80825aa235d228e47a91f83558795500fb0611a97051"
+                      "sha256":  "c4253619290bdf229e63b38019fb0e34bda2e9f5c4451fbb27ea97ea0fab8aba"
                   },
                   {
                       "path":  "MAP.md",
-                      "sha256":  "b3d8b88444d9c15d1c54d9889d850ea6e48ae5e45603dc5b1c6650b0408c8bfa"
+                      "sha256":  "dab72b3604254ccd3a87ce8342817f4b1f59de6855cf59e197a58db74eaccdba"
                   },
                   {
                       "path":  "TASK.md",
-                      "sha256":  "d6f96ab70b73eb0053f58f17b152f27f1fae53436482a876a6088b6d97e42d7d"
+                      "sha256":  "aff9ad86bc22d8817f3b0fe594f9a8a5cfc957086a60072dc514a34e2cc796fb"
                   },
                   {
                       "path":  "STATUS.md",
-                      "sha256":  "a58fa7255946a3221edcfddd0b41894a8b78c85b3c62face9e6834031400b76f"
+                      "sha256":  "8935424bf79e9d95fd36e85a36e7c60eedfcf1d033c3e95659cd430ca027c29f"
                   },
                   {
                       "path":  "LOG.md",
-                      "sha256":  "98c98f6a0505a3282dd4f9867cf2382881fd4f37096ae3c47137e0b6f2894dd3"
+                      "sha256":  "d46af08967eb4b5684f9abb03b8f6fc44db4331deffa176c2077c3cc0218bd84"
                   },
                   {
                       "path":  "BACKBURNER.md",
@@ -44,23 +44,23 @@
                   },
                   {
                       "path":  "skills-manifest.json",
-                      "sha256":  "fd6385edc151d35bc7ad617a9aaaaf66a5be0ebba25f9aa3ca5c115cdf40bc15"
+                      "sha256":  "30d112c5f52ff97eccbe56095c00c6e81cd012c10efc6930f3a262404ebe5949"
                   },
                   {
                       "path":  "data-manifest.yaml",
-                      "sha256":  "d3dd62709adf66de2835f0d642baec75c2b67a098754c8b6d1903baeb52a8958"
+                      "sha256":  "7ec343104b6ea271fe7ab1f00260493c1b8c59401e1f507da55763da6c51be7e"
                   },
                   {
                       "path":  "secret-manifest.json",
-                      "sha256":  "7c8440806e9dac2508f8e6676d0fddd0c6bb18d0a2f5d53df0b689e0e1bf79a2"
+                      "sha256":  "a319c5484553955424c120ceb6b1b1a0d0afff3fe0f310221779a7357c9f2b67"
                   },
                   {
                       "path":  "secret-manifest.md",
-                      "sha256":  "bcd7d1c3db937d8506a85af494a47fa4bdc4c63767d6a29a6bf9f31d1d6fe382"
+                      "sha256":  "29d090dda76002e0256d30bf8929a85e768cf061df5ce77b0fa6d04e499462f6"
                   },
                   {
                       "path":  ".env.example",
-                      "sha256":  "751a4a8b9580892f5a75328d593d43806317234e16acaf786d48d2641a753422"
+                      "sha256":  "5121d9205615b5c11036e94e837c322db57e77f9ea3755cb80ed1a5a7b2e525f"
                   },
                   {
                       "path":  ".gitleaks.toml",
@@ -76,7 +76,7 @@
                   },
                   {
                       "path":  ".agents\\skill-pathways.json",
-                      "sha256":  "0354ef7fccab6a2e50d35c3b1cd883f044916e5879757b0ec60851dbce354f65"
+                      "sha256":  "33d529030f3723bc185f94090cf9fcd1007646f9c7d15a76f962104aa78a3b9b"
                   }
               ]
 }
