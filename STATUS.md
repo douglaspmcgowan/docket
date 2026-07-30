@@ -23,3 +23,4 @@
 - The existing fixed-path Gitleaks pre-commit hook is preserved in `.git\hooks\backups\pre-commit-20260730-034521`; the active hook matches the canonical portable harness hook.
 - Merged harness `SyncProject` vendors all 22 canonical skills explicitly declared by `skills-manifest.json`; the `feedback` compatibility alias now delegates to the canonical `correct` workflow.
 - The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 132 tests. The live Vercel Blob verifier observed two concurrent writers and a successful retry.
+- Merged harness `25d04b5` normalizes project provenance and generated secret-manifest line endings; both project-state and 11-name manifest verification pass from a separate clean Windows Git checkout.

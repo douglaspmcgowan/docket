@@ -4,7 +4,7 @@
     "files":  [
                   {
                       "path":  "AGENTS.md",
-                      "sha256":  "43c12eb15a31c874b142dce86495fe69eee4e87f6be3e1a70dd855273b0318e6"
+                      "sha256":  "c30163df645145a80c019e2467814893f923d41de6fe00f168b4c884d7a5434c"
                   },
                   {
                       "path":  "CLAUDE.md",
@@ -12,11 +12,11 @@
                   },
                   {
                       "path":  ".cursor\\rules\\00-project-contract.mdc",
-                      "sha256":  "4a0980e0678eb90b23d2174f61997b6bf60d717f82b8a7a648692eb7fa1c56e3"
+                      "sha256":  "45856e0342a1fd27507db70eac82d631f49b4032e04fdc71c191f0f6496e231e"
                   },
                   {
                       "path":  "DESIGN.md",
-                      "sha256":  "c4253619290bdf229e63b38019fb0e34bda2e9f5c4451fbb27ea97ea0fab8aba"
+                      "sha256":  "e441b8a467d3e6100bc60b760df792ae491987f6743621b169b6215ffab5f176"
                   },
                   {
                       "path":  "MAP.md",
@@ -24,15 +24,15 @@
                   },
                   {
                       "path":  "TASK.md",
-                      "sha256":  "f7012789948049ae9e216d1af4a27abd443ca90608b375c7139ba344c103a776"
+                      "sha256":  "1bbbf73c6d43eb84e168ae2298b46e8929f18e1bbea6f4a078100c4bcb4de5c2"
                   },
                   {
                       "path":  "STATUS.md",
-                      "sha256":  "0a5151b9878cb89a7d3d0285cb99f038578ac3f7368b8e29b879bd1b6abc7a59"
+                      "sha256":  "1bdb55acfb39f2d18ad12464c8f27e2f6575853a74f37fd9189b992fb16ad128"
                   },
                   {
                       "path":  "LOG.md",
-                      "sha256":  "9f273b70612f48f43662b8b494fa1c3b5f69a48a0e756498d07b7a787d2234ea"
+                      "sha256":  "3dbd89510410bfe925fdc5a5d2dfbfafb4a20f304f9f7e61a3a805443d4992b7"
                   },
                   {
                       "path":  "BACKBURNER.md",
@@ -44,11 +44,11 @@
                   },
                   {
                       "path":  "skills-manifest.json",
-                      "sha256":  "30d112c5f52ff97eccbe56095c00c6e81cd012c10efc6930f3a262404ebe5949"
+                      "sha256":  "d1982f1dd4597f98aa8d387c17cf8ca8b2dead407061431782892f4026c6201c"
                   },
                   {
                       "path":  "data-manifest.yaml",
-                      "sha256":  "7ec343104b6ea271fe7ab1f00260493c1b8c59401e1f507da55763da6c51be7e"
+                      "sha256":  "d3dd62709adf66de2835f0d642baec75c2b67a098754c8b6d1903baeb52a8958"
                   },
                   {
                       "path":  "secret-manifest.json",
@@ -56,19 +56,19 @@
                   },
                   {
                       "path":  "secret-manifest.md",
-                      "sha256":  "29d090dda76002e0256d30bf8929a85e768cf061df5ce77b0fa6d04e499462f6"
+                      "sha256":  "8c87a5c519e8013880c00ae17254cc88ba431d0b9aa09e6fd276c939511235f0"
                   },
                   {
                       "path":  ".env.example",
-                      "sha256":  "5121d9205615b5c11036e94e837c322db57e77f9ea3755cb80ed1a5a7b2e525f"
+                      "sha256":  "8945b417c4232c02d2b728d130fb02ff87b9032efcac1bb356fecd22ad757f6e"
                   },
                   {
                       "path":  ".gitleaks.toml",
-                      "sha256":  "728ef3b38e30fcccc7af59aae7867f43b6527f1a75f24d964ea583356e187ed7"
+                      "sha256":  "345a5d3c38bc709a9f0312245d6241890ea216a5c1c195acecb7700a9b6132ce"
                   },
                   {
                       "path":  ".github\\workflows\\gitleaks.yml",
-                      "sha256":  "2bd175a00187b54afa584df3f118e5956b5940f96b3fae84907fbea9e6c66a66"
+                      "sha256":  "ef8cd6c9ec337001608b0ea79b4aa890885e477ecffd440f36fd01b8f049d6e3"
                   },
                   {
                       "path":  ".agents\\feedback\\FEEDBACK-LOG.md",

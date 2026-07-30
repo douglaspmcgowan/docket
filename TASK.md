@@ -45,6 +45,7 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 
 ## Completed
 
+- [x] Reconciled Docket with merged harness `25d04b5`; normalized provenance and the 11-name generated secret manifest both pass from a separate Windows Git checkout.
 - [x] Reconciled portable-contract provenance, the 11-name generated secret manifest, and current `REVIEW_SECRET` documentation.
 - [x] Preserved the prior fixed-path Gitleaks hook in a timestamped backup and installed the matching canonical portable hook.
 - [x] Vendored all 22 declared canonical skills and replaced the stale project `feedback` workflow with the current alias to `correct`.
