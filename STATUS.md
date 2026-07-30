@@ -1,6 +1,6 @@
 # Status
 
-- Git authority is `https://github.com/douglaspmcgowan/docket`; the selected storage and broker hardening is integrated on `master`.
+- Git authority is `https://github.com/douglaspmcgowan/docket`; PR #4 merged the verified portability reconciliation into `master` as `6e51591`.
 - The linked private Vercel Blob store is the current network authority for `items.json`, `results.json`, `tickets.json`, and `reads.json`.
 - Every API mutation uses compare-and-swap. Blob reads normalize HTTP weak ETags before conditional writes. The live isolated verifier observed an ETag conflict retry and preserved both concurrent writers, including Vercel's untyped conflicting-operation response.
 - Reads, writes, ingest, export, and restore validate the committed document schema. Invalid JSON and malformed records fail visibly.

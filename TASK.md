@@ -6,12 +6,7 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 
 ## Active
 
-- [x] Reconcile stale portable-contract provenance and generated secret-manifest output reported by the installed shared verifier. | evidence: project verifier and 11-variable generated-manifest check pass | owner: project harness | class: MAIN.
-  - [x] Preserve the existing functionally equivalent fixed-path Gitleaks hook, install the canonical portable hook, and verify staged scanning remains fail-closed. | evidence: timestamped backup `pre-commit-20260730-034521`; installed/canonical SHA-256 match | owner: local Git hook | class: SEQUENTIAL.
-- [x] Reconcile active Docket documentation with the existing Bitwarden Secrets Manager resource display name `REVIEW_SECRET`. | evidence: active-reference scan is clean | owner: documentation | class: MAIN.
-- [x] Replace the stale project `feedback` workflow with the current canonical compatibility alias to `correct`. | evidence: manifest now declares canonical `feedback`; installed `SyncProject` replaced the stale tree and project verification passes | owner: skill portability | class: MAIN.
-- [x] Run the complete Docket verification chain and repeat the brokered publish/pull sync. | evidence: 132 tests, adapter and phone suites, syntax/self-tests, live two-writer retry, project verifier, and 160-card brokered sync pass | owner: release | class: SEQUENTIAL.
-- [~] Publish the verified reconciliation and confirm GitHub checks. | after: final provenance refresh and security gates | evidence: clean commit, pull request checks, merged master verifier | owner: release | class: SEQUENTIAL.
+<!-- No active Docket implementation task. -->
 
 ## Queue
 
@@ -50,6 +45,11 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 
 ## Completed
 
+- [x] Reconciled portable-contract provenance, the 11-name generated secret manifest, and current `REVIEW_SECRET` documentation.
+- [x] Preserved the prior fixed-path Gitleaks hook in a timestamped backup and installed the matching canonical portable hook.
+- [x] Vendored all 22 declared canonical skills and replaced the stale project `feedback` workflow with the current alias to `correct`.
+- [x] Passed the 132-test, adapter, phone, live two-writer, project-state, generated-manifest, projection-hash, diff, and Gitleaks verification chain.
+- [x] Repeated the brokered 160-card sync, merged Docket PR #4 as `6e51591`, and confirmed both GitHub scans passed.
 - [x] Added schema validation at ingest, read, write, export, and restore boundaries.
 - [x] Added ETag compare-and-swap with bounded conflict retries for all four Blob aggregates.
 - [x] Replaced API read-modify-write handlers with atomic mutations.
@@ -77,4 +77,4 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: commit and push the verified reconciliation, confirm GitHub checks, merge it, and rerun the project verifier on merged master.
+- Next: rerun the project verifier after any future project contract, skill binding, or generated-manifest change.
