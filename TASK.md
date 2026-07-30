@@ -6,7 +6,7 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 
 ## Active
 
-<!-- No active Docket implementation task. -->
+- [~] Reconcile Docket with merged harness `25d04b5`, regenerate normalized project provenance and the secret-manifest view, and prove verification from a separate clean checkout.
 
 ## Queue
 
