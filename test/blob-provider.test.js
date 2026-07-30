@@ -32,6 +32,27 @@ test('Blob updates use the ETag as an ifMatch precondition', async () => {
   assert.equal(writes[0].options.allowOverwrite, true);
 });
 
+test('Blob reads normalize an HTTP weak ETag before conditional writes', async () => {
+  let conditionalVersion;
+  const sdk = {
+    BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {},
+    async get() {
+      return {
+        statusCode: 200,
+        stream: new Blob([JSON.stringify({})]).stream(),
+        blob: { etag: 'W/"opaque-version"' },
+      };
+    },
+    async put(name, body, options) {
+      conditionalVersion = options.ifMatch;
+      return { etag: '"next-version"' };
+    },
+  };
+  const store = createDocumentStore(createBlobProvider(sdk));
+  await store.mutate('items.json', items => items);
+  assert.equal(conditionalVersion, '"opaque-version"');
+});
+
 test('Blob precondition failures become retryable version conflicts', async () => {
   class BlobPreconditionFailedError extends Error {}
   const sdk = {

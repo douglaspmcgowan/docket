@@ -190,7 +190,7 @@ function createBlobProvider(blobModule, { prefix = '' } = {}) {
         throw new Error(`unexpected Blob read status for ${blobName}: ${response.statusCode}`);
       }
       const body = await new Response(response.stream).text();
-      return { body, version: response.blob.etag };
+      return { body, version: String(response.blob.etag).replace(/^W\//, '') };
     },
     async write(name, body, expectedVersion) {
       const blobName = pathname(name);

@@ -1,8 +1,8 @@
 # Status
 
-- Git authority is `https://github.com/douglaspmcgowan/docket`; the selected storage work is on `codex/docket-blob-hardening` from baseline `f3688602c02a7f0c96b70427f7d78d68cf43f4e1`.
+- Git authority is `https://github.com/douglaspmcgowan/docket`; the selected storage and broker hardening is integrated on `master`.
 - The linked private Vercel Blob store is the current network authority for `items.json`, `results.json`, `tickets.json`, and `reads.json`.
-- Every API mutation uses compare-and-swap. The live isolated verifier observed an ETag conflict retry and preserved both concurrent writers, including Vercel's untyped conflicting-operation response.
+- Every API mutation uses compare-and-swap. Blob reads normalize HTTP weak ETags before conditional writes. The live isolated verifier observed an ETag conflict retry and preserved both concurrent writers, including Vercel's untyped conflicting-operation response.
 - Reads, writes, ingest, export, and restore validate the committed document schema. Invalid JSON and malformed records fail visibly.
 - A complete live export was created at `C:\Users\dougl\Data\Projects\docket\private\cloud-export-20260729-blob-hardening`; all four documents passed checksums, schema validation, and record-count verification.
 - New exports confirm that every source version stayed unchanged across two complete reads, publish from a verified temporary sibling, and leave no partial target on failure.
@@ -15,7 +15,9 @@
 - A disposable restore target must be physically empty; unrelated files, directories, and links block mutation.
 - The shared content guard excludes explicit `sensitive: true`, standalone `CUI`, `Controlled Unclassified Information`, `NASA Internal`, and `NASA Sensitive` markers at publisher and cloud-store boundaries while allowing legitimate public and unmarked cards.
 - The local SQLite server remains a compatibility mirror and recovery cache with guarded transactions and readable JSON exports.
-- Credential values remain outside Git and agent output. Every active JavaScript review client uses one shared injected-`REVIEW_SECRET` boundary. The daemon schedules the allowlisted Bitwarden Secrets Manager `docket-sync` command.
+- Credential values remain outside Git and agent output. The existing Bitwarden `Agents` organization, `Agent Runtime` project, `docket.REVIEW_SECRET`, and machine account supply every active JavaScript review client through the shared broker boundary. The daemon schedules the allowlisted `docket-sync` command, and the stdin-only `docket-align-vercel-secret` command aligns Vercel `APP_SECRET`.
 - Runtime code contains no plaintext `.passcode.txt` reader. A repository-wide regression scans tracked and untracked active-source files, and the legacy command wrappers exit with exact BWS broker guidance.
 - The cloud-style 390-by-844 phone proof rejects a wrong bearer, accepts the correct bearer, and persists a submitted decision without loopback trust.
-- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 128 tests.
+- Production deployment `dpl_G4gdFWcZF9K4L67DUEgWp3q2zWAM` is ready and aliased to `https://vault-review-mobile.vercel.app`.
+- A live brokered sync published 160 unresolved local cards with zero refused cards. A repeat pass produced the same stable result. No newer known cloud decision required a local merge; 25 legacy results whose IDs are absent from the current local item inventory were safely refused.
+- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 132 tests.

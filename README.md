@@ -78,8 +78,8 @@ Empty sets and projects hide automatically and reappear when matching cards retu
 
 | Name | Why it exists | Who creates it | Where it lives |
 |---|---|---|---|
-| `REVIEW_SECRET` | Authenticates local publishers, synchronizers, and the phone UI to the public Docket API. | Douglas creates one long random value in the Bitwarden Secrets Manager project approved for agent runtime. | Bitwarden Secrets Manager; injected only into the allowlisted Docket child process. |
-| `APP_SECRET` | Gives the Vercel API the expected bearer value for request comparison. | Douglas copies the exact `REVIEW_SECRET` value into Vercel. | Vercel project environment variable, scoped to Production and marked Sensitive. Preview receives the same value only when preview deployments need authenticated access. |
+| `REVIEW_SECRET` | Authenticates local publishers, synchronizers, and the phone UI to the public Docket API. | The existing Bitwarden `Agents` organization owns one `docket.REVIEW_SECRET` record in `Agent Runtime`. | Bitwarden Secrets Manager; injected only into allowlisted Docket child processes. |
+| `APP_SECRET` | Gives the Vercel API the expected bearer value for request comparison. | The approved broker streams the existing `docket.REVIEW_SECRET` value to Vercel through standard input. | Vercel project environment variable, scoped to Production and marked Sensitive. Preview receives the same value only when preview deployments need access. |
 | `BLOB_READ_WRITE_TOKEN` | Authenticates legacy token-based reads and writes to the private Blob store. | Vercel generates it when a token-based store is created or connected. | Vercel project environment. |
 | `REVIEW_URL` | Identifies the cloud API base URL. | Vercel assigns the deployment URL. | Public configuration; defaults to `https://vault-review-mobile.vercel.app` in current clients. |
 
@@ -96,19 +96,23 @@ supports OIDC. See Vercel's
 
 ## Bitwarden Secrets Manager setup
 
-1. Create the Docket `REVIEW_SECRET` in the approved Bitwarden Secrets Manager project.
-2. Grant a per-computer, read-only machine account access to that project.
-3. In interactive Windows PowerShell, store the machine-account token in Windows Credential Manager:
+1. Reuse the `Agents` organization, `Agent Runtime` project, and `docket.REVIEW_SECRET`. Verify their value-free IDs before any creation action.
+2. Grant a per-computer, read-only machine account access to `Agent Runtime`.
+3. Store the machine-account token in Windows Credential Manager:
 
    ```powershell
    & "C:\Users\dougl\.agents\tools\Set-BwsMachineToken.ps1"
    ```
 
    The command prompts through `SecureString`; keep the token out of command arguments and output.
-4. In the shared harness `bws-command-allowlist.json`, fill the value-safe `projectId` and `secretId`
-   fields for command `docket-sync`. Keep the secret value and machine token outside Git.
-5. Configure Vercel `APP_SECRET` with the same bearer through Vercel's protected environment-variable
-   workflow, then redeploy.
+4. Keep the value-safe `projectId` and `resourceId` locators in the shared harness `bws-command-allowlist.json`.
+5. Transfer the approved bearer to Vercel through the registered stdin-only command:
+
+   ```powershell
+   & "C:\Users\dougl\.agents\tools\Invoke-WithBitwardenSecret.ps1" -CommandId "docket-align-vercel-secret"
+   ```
+
+6. Redeploy the current production artifact so the new deployment receives the aligned environment.
 
 Every active JavaScript client receives `REVIEW_SECRET` through its environment. Runtime code has no
 plaintext passcode-file reader. The ignored legacy `.passcode.txt` name remains solely to prevent an
@@ -186,7 +190,7 @@ The harness ships the value-safe schema-version-3 `docket-sync` record. Its secu
       "projectId": "<non-secret-project-id>",
       "secretBindings": [
         {
-          "secretId": "<non-secret-secret-id>",
+          "resourceId": "<value-free-resource-id>",
           "environmentVariable": "REVIEW_SECRET"
         }
       ]

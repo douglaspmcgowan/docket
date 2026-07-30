@@ -2,11 +2,11 @@
 
 ## Goal
 
-Harden the selected private Vercel Blob Docket authority, prove complete recovery, and publish the reviewed branch without changing production records.
+Keep the selected private Vercel Blob Docket authority recoverable, broker-authenticated, concurrency-safe, and synchronized with the local Docket store.
 
 ## Active
 
-- [?] Await root re-review of the repository-wide plaintext-passcode removal.
+<!-- No active Docket implementation task. -->
 
 ## Queue
 
@@ -30,6 +30,10 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - [x] Disable legacy passcode-reading wrappers with exact BWS broker guidance.
 - [x] Update migration documentation and durable task state.
 - [x] Run the full verification chain, commit, and push the follow-up.
+- [x] Reuse the existing Bitwarden `Agents` organization, `Agent Runtime` project, `docket.REVIEW_SECRET`, and machine account without creating duplicates.
+- [x] Align Vercel `APP_SECRET` through the allowlisted stdin-only broker command and redeploy production.
+- [x] Normalize Vercel Blob weak ETags before conditional writes and verify the live concurrency path.
+- [x] Publish 160 unresolved local cards through the broker and verify a second repeatable sync; no newer known cloud decision required a local merge.
 
 ## Blocked
 
@@ -38,7 +42,6 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 ## Needs decision
 
 - [?] Douglas may later replace the selected Vercel Blob authority; the current implementation and design record keep that choice reversible.
-- [?] The Docket bearer still needs the approved Bitwarden/Vercel value setup if the existing deployment value is unavailable to the phone.
 - [!] The shared project-state verifier reports the repository's inherited missing `VERIFY.md`; this Docket branch did not create a new project verification contract.
 
 ## Completed
@@ -70,4 +73,4 @@ Harden the selected private Vercel Blob Docket authority, prove complete recover
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: root re-reviews the plaintext-passcode removal and decides whether to merge the branch.
+- Next: push the verified master commit and confirm its GitHub checks.
