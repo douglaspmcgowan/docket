@@ -66,6 +66,25 @@ Agents create card JSON and publish it through the authenticated API. `api/_sche
 
 One agent owns each writable worktree. Parallel tasks receive distinct `LOCAL_STORE_DIR` paths and ports. Production Vercel deployment, production Blob data, and live card IDs are shared mutable resources. Blob mutations use ETag compare-and-swap. Tests and restore exercises use isolated prefixes or disposable local directories.
 
+## State
+
+- Git authority: `https://github.com/douglaspmcgowan/docket`, default branch `master`.
+- Network authority: the linked private Vercel Blob store, holding `items.json`, `results.json`, `tickets.json`, and `reads.json`.
+- Every API mutation uses compare-and-swap; Blob reads normalize HTTP weak ETags before conditional writes.
+- Reads, writes, ingest, export, and restore all validate the committed document schema; invalid JSON and malformed records fail visibly.
+- Export verification accepts exactly the four authoritative plain JSON files plus the plain manifest; linked roots, linked entries, directories, and unrelated files fail verification.
+- Retention re-verifies every removal candidate and deletes only the exact verified files plus the empty directory.
+- The `Snapshot` adapter reads 3 UTC daily, 4 ISO-weekly, and 3 monthly retention defaults from the `docket-cloud-authority` manifest asset; explicitly bound nonnegative parameters override individual tiers, and zero tiers still preserve the newest verified point.
+- Production restore is intentionally disabled in the adapter; recovery proof uses an empty disposable target and cannot overwrite live data. A disposable restore target must be physically empty.
+- The shared content guard excludes explicit `sensitive: true`, standalone `CUI`, `Controlled Unclassified Information`, `NASA Internal`, and `NASA Sensitive` markers at publisher and cloud-store boundaries while allowing legitimate public and unmarked cards.
+- The local SQLite server (`local-server.js`) is a compatibility mirror and recovery cache with guarded transactions and readable JSON exports.
+- Credential values remain outside Git and agent output. The Bitwarden `Agents` organization, `Agent Runtime` project, `REVIEW_SECRET` resource, and machine account supply every active JavaScript review client through the shared broker boundary. The daemon schedules the allowlisted `docket-sync` command; the stdin-only `docket-align-vercel-secret` command aligns Vercel `APP_SECRET`.
+- Runtime code contains no plaintext `.passcode.txt` reader. A repository-wide regression scans tracked and untracked active-source files, and legacy command wrappers exit with exact BWS broker guidance.
+- Production deployment `dpl_G4gdFWcZF9K4L67DUEgWp3q2zWAM` is aliased to `https://vault-review-mobile.vercel.app`.
+- The Gitleaks pre-commit hook is the canonical portable harness hook; the prior fixed-path hook is preserved at `.git/hooks/backups/pre-commit-20260730-034521`.
+- Merged harness `SyncProject` vendors all 22 canonical skills declared by `skills-manifest.json`; the `feedback` compatibility alias delegates to the canonical `correct` workflow.
+- The Node suite currently holds 132 tests; the live Vercel Blob verifier exercises two concurrent writers with a successful CAS retry.
+
 ## Update rule
 
 Update this file whenever a core document, component boundary, data flow, owner, integration, or important path changes.
