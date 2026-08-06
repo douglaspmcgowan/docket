@@ -283,8 +283,22 @@ function cloudAdapter(url) {
       }
     },
     async deleteResults(ids) {
-      const r = await call('results-delete', 'POST', { ids });
-      return { deleted: r.deleted || [] };
+      try {
+        const r = await call('results-delete', 'POST', { ids });
+        return { deleted: r.deleted || [] };
+      } catch (error) {
+        if (!/failed 40[04]/.test(String(error.message))) throw error;
+        // The live vault-review-mobile deployment predates the admin surface and spells the same
+        // clear-a-result operation `?op=unarchive`. It answers with a count plus the skipped ids,
+        // so normalise back to the id list every caller here expects.
+        const r = await call('unarchive', 'POST', { ids });
+        const skipped = new Set((r.skipped || []).map(s => (s && s.id) || s));
+        return {
+          deleted: ids.filter(id => !skipped.has(id)),
+          skipped: r.skipped || [],
+          legacyEndpoint: true,
+        };
+      }
     },
   };
 }
