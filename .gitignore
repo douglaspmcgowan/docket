@@ -33,6 +33,8 @@
 !/migrate-local.js
 !/cleanup-data.js
 !/import-outbox.js
+!/docket-cli.js
+!/docket.ps1
 !/docket-daemon.js
 !/docket-daemon.vbs
 !/sync-review.cmd
