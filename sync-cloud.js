@@ -15,15 +15,17 @@ const HOME = process.env.USERPROFILE || process.env.HOME || __dirname;
 const STORE = process.env.LOCAL_STORE_DIR || path.join(HOME, '.docket-local');
 
 const secret = requireReviewSecret;
-function readLocal(name) {
-  try { const v = JSON.parse(fs.readFileSync(path.join(STORE, name), 'utf8')); return v && typeof v === 'object' ? v : {}; }
-  catch { return {}; }
-}
-function writeLocal(name, obj) {
-  fs.mkdirSync(STORE, { recursive: true });
-  const dst = path.join(STORE, name), tmp = dst + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(obj)); fs.renameSync(tmp, dst);   // atomic swap
-}
+// The SQLite `documents` table is the authority and api/_store.js is its only sanctioned gateway
+// (compare-and-swap updates, flat files mirrored out as a side effect). This script used to carry its
+// own readLocal/writeLocal pair that wrote the flat JSON files DIRECTLY, so a cloud pull landed
+// answers where the CLI and the API never looked: on 2026-08-06 that left results.json holding 435
+// records while the documents row still held 28, and pushes then skipped cards because the two copies
+// disagreed about what was resolved. One writer, one authority — hence _store, not fs.
+// _store picks its backend at require time, so LOCAL_STORE_DIR is set first: this script syncs the
+// LOCAL store up to the cloud over HTTP, so it must bind to the local SQLite provider, never the Blob
+// one (which would also drag in @vercel/blob, a dependency this repo does not carry).
+process.env.LOCAL_STORE_DIR = STORE;
+const store = require('./api/_store');
 
 function selectSyncItems(items, results) {
   const resolved = results && typeof results === 'object' ? results : {};
@@ -68,8 +70,8 @@ function mergeCloudDecisions(cloudResults, localResults, localItems) {
 
 async function syncOnce() {
   const sec = secret();
-  const items = readLocal('items.json');
-  const local = readLocal('results.json');
+  const items = await store.readItems();
+  const local = await store.readResults();
   const selection = selectSyncItems(items, local);
   const outbound = selection.items;
 
@@ -89,8 +91,15 @@ async function syncOnce() {
   const r2 = await fetch(CLOUD_URL + '/api/sync?op=pull', { headers: { Authorization: 'Bearer ' + sec } });
   if (!r2.ok) throw new Error('cloud pull failed ' + r2.status + ' ' + await r2.text());
   const cloudResults = (await r2.json()).results || [];
-  const decisionMerge = mergeCloudDecisions(cloudResults, local, items);
-  if (decisionMerge.pulled) writeLocal('results.json', decisionMerge.merged);
+  // Merge inside the store's compare-and-swap mutator, against the freshest document rather than the
+  // snapshot read at the top of the run, so a concurrent answer cannot be clobbered by this pull.
+  let decisionMerge = mergeCloudDecisions(cloudResults, local, items);
+  if (decisionMerge.pulled) {
+    await store.updateResults(current => {
+      decisionMerge = mergeCloudDecisions(cloudResults, current, items);
+      return decisionMerge.merged;
+    });
+  }
   return {
     pushed,
     pulled: decisionMerge.pulled,
