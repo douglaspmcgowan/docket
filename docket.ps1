@@ -57,7 +57,8 @@ if (Test-Path -LiteralPath $responsePath) { Remove-Item -LiteralPath $responsePa
 
 # ConvertTo-Json unwraps a single-element array; force the array shape the CLI validates.
 $payload = @{ argv = @($arguments) } | ConvertTo-Json -Depth 5 -Compress
-Set-Content -LiteralPath $requestPath -Value $payload -Encoding utf8
+# BOM-free on both Windows PowerShell 5.1 and pwsh; 5.1's -Encoding utf8 emits a BOM that docket-cli's JSON.parse rejects.
+[System.IO.File]::WriteAllText($requestPath, $payload, [System.Text.UTF8Encoding]::new($false))
 
 & (Join-Path $env:USERPROFILE '.agents\tools\Invoke-WithBitwardenSecret.ps1') -CommandId 'docket-admin'
 exit $(if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 })
