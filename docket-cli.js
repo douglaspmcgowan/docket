@@ -26,7 +26,7 @@ const RESPONSE_FILE = 'cli-response.json';
 
 const COMMANDS = new Set([
   'list', 'get', 'create', 'update', 'delete', 'move', 'archive', 'unarchive',
-  'results', 'results-delete', 'groups', 'push', 'sync', 'prune', 'mirror',
+  'answer', 'results', 'results-delete', 'groups', 'push', 'sync', 'prune', 'mirror',
   'export', 'import', 'help',
 ]);
 
@@ -59,6 +59,8 @@ function parseArgs(argv) {
     against: 'local',
     to: 'local',
     comment: null,
+    chosen: null,
+    answeredAt: null,
     fields: null,
     limit: null,
     search: null,
@@ -67,6 +69,7 @@ function parseArgs(argv) {
   const needsValue = new Set([
     '--target', '--store', '--url', '--project', '--set', '--kind', '--file',
     '--out', '--outbox', '--against', '--to', '--comment', '--fields', '--limit', '--search',
+    '--chosen', '--answered-at',
   ]);
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
@@ -90,6 +93,7 @@ function parseArgs(argv) {
         '--set': 'set', '--kind': 'kind', '--file': 'file', '--out': 'out', '--outbox': 'outbox',
         '--against': 'against', '--to': 'to', '--comment': 'comment', '--fields': 'fields',
         '--limit': 'limit', '--search': 'search',
+        '--chosen': 'chosen', '--answered-at': 'answeredAt',
       }[token];
       options[key] = value;
       continue;
@@ -364,6 +368,7 @@ const HELP = `docket-cli — full CRUD over the Docket board (cloud is the defau
   move      <id...> [--project P] [--set S]
   archive   <id...> [--comment TEXT]
   unarchive <id...>
+  answer    <id...> --chosen "<option label>" [--comment TEXT] [--answered-at ISO]
   results   [--orphans]
   results-delete <id...>
   groups
@@ -454,6 +459,20 @@ async function run(options) {
       const ids = requireIds(options);
       if (options.dryRun) return { ...context, dryRun: true, wouldUnarchive: ids };
       return { ...context, ...(await adapter.deleteResults(ids)) };
+    }
+    case 'answer': {
+      // Records a real answer, not an archive. This is the write path the Obsidian mirror needs:
+      // a decision block Douglas ticks in the vault becomes a Docket result under the same id.
+      const ids = requireIds(options);
+      const chosen = typeof options.chosen === 'string' ? options.chosen.trim() : '';
+      if (!chosen && !options.comment) throw new CliError('answer requires --chosen <option> and/or --comment <text>');
+      const answeredAt = options.answeredAt || new Date().toISOString();
+      if (Number.isNaN(Date.parse(answeredAt))) throw new CliError('--answered-at must be an ISO-8601 timestamp');
+      const results = ids.map(id => (chosen
+        ? { id, chosen, answered_at: answeredAt, ...(options.comment ? { comment: options.comment } : {}) }
+        : { id, chosen: null, comment: options.comment, answered_at: answeredAt }));
+      if (options.dryRun) return { ...context, dryRun: true, wouldAnswer: ids, chosen: chosen || null };
+      return { ...context, ...(await adapter.putResults(results)), answered: ids, answered_at: answeredAt };
     }
     case 'results': {
       const { items, results } = await adapter.readAll();

@@ -136,6 +136,34 @@ describe('docket-cli CRUD against the local mirror', () => {
     await local(['unarchive', 'c3']);
     assert.deepEqual((await local(['list', '--ids-only'])).items, ['c1', 'c2', 'c3']);
 
+    // `answer` is the Obsidian mirror's write path: a real chosen option, not an archive.
+    await assert.rejects(() => local(['answer', 'c3']), /requires --chosen/);
+    await assert.rejects(
+      () => local(['answer', 'c3', '--chosen', 'Yes', '--answered-at', 'not-a-date']),
+      /ISO-8601/,
+    );
+    const dryAnswer = await local(['answer', 'c3', '--chosen', 'Yes', '--dry-run']);
+    assert.deepEqual(dryAnswer.wouldAnswer, ['c3']);
+    assert.deepEqual((await local(['results'])).results.filter(r => r.id === 'c3'), [], 'a dry run must not mutate');
+
+    const answered = await local([
+      'answer', 'c3', '--chosen', 'Yes', '--comment', 'because', '--answered-at', '2026-08-06T12:00:00.000Z',
+    ]);
+    assert.deepEqual(answered.answered, ['c3']);
+    const c3Result = (await local(['get', 'c3'])).results[0];
+    assert.equal(c3Result.chosen, 'Yes');
+    assert.equal(c3Result.comment, 'because');
+    assert.equal(c3Result.answered_at, '2026-08-06T12:00:00.000Z');
+    assert.equal(c3Result.archived, undefined, 'an answer is not an archive');
+    assert.deepEqual((await local(['list', '--ids-only'])).items, ['c1', 'c2'], 'an answered card leaves the pending board');
+
+    // A comment with no chosen option is a legitimate outcome too.
+    await local(['answer', 'c3', '--comment', 'thinking about it']);
+    assert.equal((await local(['get', 'c3'])).results[0].chosen, null);
+
+    await local(['unarchive', 'c3']);
+    assert.deepEqual((await local(['list', '--ids-only'])).items, ['c1', 'c2', 'c3']);
+
     const groups = await local(['groups']);
     assert.equal(groups.groups.find(g => g.project === 'Q').total, 1);
 
