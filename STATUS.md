@@ -1,6 +1,6 @@
 # Status
 
-- Git authority is `https://github.com/douglaspmcgowan/docket`; the selected storage and broker hardening is integrated on `master`.
+- Git authority is `https://github.com/douglaspmcgowan/docket`; PR #4 merged the verified portability reconciliation into `master` as `6e51591`.
 - The linked private Vercel Blob store is the current network authority for `items.json`, `results.json`, `tickets.json`, and `reads.json`.
 - Every API mutation uses compare-and-swap. Blob reads normalize HTTP weak ETags before conditional writes. The live isolated verifier observed an ETag conflict retry and preserved both concurrent writers, including Vercel's untyped conflicting-operation response.
 - Reads, writes, ingest, export, and restore validate the committed document schema. Invalid JSON and malformed records fail visibly.
@@ -15,9 +15,12 @@
 - A disposable restore target must be physically empty; unrelated files, directories, and links block mutation.
 - The shared content guard excludes explicit `sensitive: true`, standalone `CUI`, `Controlled Unclassified Information`, `NASA Internal`, and `NASA Sensitive` markers at publisher and cloud-store boundaries while allowing legitimate public and unmarked cards.
 - The local SQLite server remains a compatibility mirror and recovery cache with guarded transactions and readable JSON exports.
-- Credential values remain outside Git and agent output. The existing Bitwarden `Agents` organization, `Agent Runtime` project, `docket.REVIEW_SECRET`, and machine account supply every active JavaScript review client through the shared broker boundary. The daemon schedules the allowlisted `docket-sync` command, and the stdin-only `docket-align-vercel-secret` command aligns Vercel `APP_SECRET`.
+- Credential values remain outside Git and agent output. The existing Bitwarden `Agents` organization, `Agent Runtime` project, `REVIEW_SECRET` resource, and machine account supply every active JavaScript review client through the shared broker boundary. The daemon schedules the allowlisted `docket-sync` command, and the stdin-only `docket-align-vercel-secret` command aligns Vercel `APP_SECRET`.
 - Runtime code contains no plaintext `.passcode.txt` reader. A repository-wide regression scans tracked and untracked active-source files, and the legacy command wrappers exit with exact BWS broker guidance.
 - The cloud-style 390-by-844 phone proof rejects a wrong bearer, accepts the correct bearer, and persists a submitted decision without loopback trust.
 - Production deployment `dpl_G4gdFWcZF9K4L67DUEgWp3q2zWAM` is ready and aliased to `https://vault-review-mobile.vercel.app`.
-- A live brokered sync published 160 unresolved local cards with zero refused cards. A repeat pass produced the same stable result. No newer known cloud decision required a local merge; 25 legacy results whose IDs are absent from the current local item inventory were safely refused.
-- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 132 tests.
+- A fresh brokered sync on 2026-07-30 published 160 unresolved local cards with zero refused cards and pulled zero current decisions. The 25 refused legacy results have IDs absent from the current local item inventory and remain safely unmerged.
+- The existing fixed-path Gitleaks pre-commit hook is preserved in `.git\hooks\backups\pre-commit-20260730-034521`; the active hook matches the canonical portable harness hook.
+- Merged harness `SyncProject` vendors all 22 canonical skills explicitly declared by `skills-manifest.json`; the `feedback` compatibility alias now delegates to the canonical `correct` workflow.
+- The complete Node, adapter, and phone-browser verification chain passes; the Node suite contains 132 tests. The live Vercel Blob verifier observed two concurrent writers and a successful retry.
+- Merged harness `25d04b5` normalizes project provenance and generated secret-manifest line endings; both project-state and 11-name manifest verification pass from a separate clean Windows Git checkout.

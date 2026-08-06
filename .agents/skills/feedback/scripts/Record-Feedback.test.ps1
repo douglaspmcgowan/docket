@@ -30,6 +30,9 @@ try {
     )) {
         if (-not $content.Contains($expected)) { throw "Feedback log lacks: $expected" }
     }
+    if ($content -match '(?m)[ \t]+$') {
+        throw 'Feedback log contains trailing whitespace.'
+    }
     if (@($result.Enforcement).Count -ne 3) { throw 'Enforcement did not remain list-valued.' }
 
     $scriptText = Get-Content -Raw -LiteralPath $script

@@ -30,7 +30,7 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 - [x] Disable legacy passcode-reading wrappers with exact BWS broker guidance.
 - [x] Update migration documentation and durable task state.
 - [x] Run the full verification chain, commit, and push the follow-up.
-- [x] Reuse the existing Bitwarden `Agents` organization, `Agent Runtime` project, `docket.REVIEW_SECRET`, and machine account without creating duplicates.
+- [x] Reuse the existing Bitwarden `Agents` organization, `Agent Runtime` project, `REVIEW_SECRET` resource, and machine account without creating duplicates.
 - [x] Align Vercel `APP_SECRET` through the allowlisted stdin-only broker command and redeploy production.
 - [x] Normalize Vercel Blob weak ETags before conditional writes and verify the live concurrency path.
 - [x] Publish 160 unresolved local cards through the broker and verify a second repeatable sync; no newer known cloud decision required a local merge.
@@ -42,10 +42,15 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 ## Needs decision
 
 - [?] Douglas may later replace the selected Vercel Blob authority; the current implementation and design record keep that choice reversible.
-- [!] The shared project-state verifier reports the repository's inherited missing `VERIFY.md`; this Docket branch did not create a new project verification contract.
 
 ## Completed
 
+- [x] Reconciled Docket with merged harness `25d04b5`; normalized provenance and the 11-name generated secret manifest both pass from a separate Windows Git checkout.
+- [x] Reconciled portable-contract provenance, the 11-name generated secret manifest, and current `REVIEW_SECRET` documentation.
+- [x] Preserved the prior fixed-path Gitleaks hook in a timestamped backup and installed the matching canonical portable hook.
+- [x] Vendored all 22 declared canonical skills and replaced the stale project `feedback` workflow with the current alias to `correct`.
+- [x] Passed the 132-test, adapter, phone, live two-writer, project-state, generated-manifest, projection-hash, diff, and Gitleaks verification chain.
+- [x] Repeated the brokered 160-card sync, merged Docket PR #4 as `6e51591`, and confirmed both GitHub scans passed.
 - [x] Added schema validation at ingest, read, write, export, and restore boundaries.
 - [x] Added ETag compare-and-swap with bounded conflict retries for all four Blob aggregates.
 - [x] Replaced API read-modify-write handlers with atomic mutations.
@@ -73,4 +78,4 @@ Keep the selected private Vercel Blob Docket authority recoverable, broker-authe
 - Browser: start `local-server.js` with a disposable store and exercise the phone viewport.
 - Secret scan: `C:\Users\dougl\Tools\gitleaks\gitleaks.exe git --redact --no-banner`
 - Project state: run the current shared-harness `Test-AgentProjectState.ps1`.
-- Next: push the verified master commit and confirm its GitHub checks.
+- Next: rerun the project verifier after any future project contract, skill binding, or generated-manifest change.

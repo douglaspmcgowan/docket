@@ -64,7 +64,12 @@ $lines.Add("## $Id")
 $lines.Add('')
 $lines.Add("timestamp: $((Get-Date).ToUniversalTime().ToString('o'))")
 $lines.Add("incident: $($Incident.Replace("`r", ' ').Replace("`n", ' '))")
-$lines.Add("consequence: $($Consequence.Replace("`r", ' ').Replace("`n", ' '))")
+if ([string]::IsNullOrEmpty($Consequence)) {
+    $lines.Add('consequence:')
+}
+else {
+    $lines.Add("consequence: $($Consequence.Replace("`r", ' ').Replace("`n", ' '))")
+}
 $lines.Add("rootCauseStatus: $RootCauseStatus")
 $lines.Add('scope:')
 foreach ($value in $Scope) { $lines.Add("  - $value") }
@@ -76,10 +81,20 @@ $lines.Add('evidence:')
 foreach ($value in $Evidence) { $lines.Add("  - $value") }
 $lines.Add('artifacts:')
 foreach ($value in $Artifact) { $lines.Add("  - $value") }
-$lines.Add("verification: $($Verification.Replace("`r", ' ').Replace("`n", ' '))")
+if ([string]::IsNullOrEmpty($Verification)) {
+    $lines.Add('verification:')
+}
+else {
+    $lines.Add("verification: $($Verification.Replace("`r", ' ').Replace("`n", ' '))")
+}
 $lines.Add("owner: $Owner")
 $lines.Add("status: $Status")
-$lines.Add("reviewTrigger: $ReviewTrigger")
+if ([string]::IsNullOrEmpty($ReviewTrigger)) {
+    $lines.Add('reviewTrigger:')
+}
+else {
+    $lines.Add("reviewTrigger: $ReviewTrigger")
+}
 
 $parent = Split-Path $logPath -Parent
 if ($PSCmdlet.ShouldProcess($logPath, 'Append value-free feedback record')) {
