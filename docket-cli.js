@@ -255,11 +255,36 @@ function cloudAdapter(url) {
     },
     async deleteItems(ids, withResults) {
       const r = await call('delete', 'POST', { ids, withResults: withResults === true });
-      return { deleted: r.deleted || [], deletedResults: r.deletedResults || [] };
+      // The live deployment's delete op spells `deleted` as a COUNT (its _groups.js deleteItems
+      // returns removed.length) and carries the actual removed cards in `removed`; the admin surface
+      // this CLI was written against spells `deleted` as the array of ids itself. Normalise to an id
+      // array either way.
+      const deleted = Array.isArray(r.deleted)
+        ? r.deleted
+        : Array.isArray(r.removed) ? r.removed.map(it => it && it.id).filter(Boolean) : [];
+      // The live deployment's delete op also has no withResults support at all — it neither cascades
+      // the delete into results.json nor reports a deletedResults field. Honor the flag ourselves via
+      // the dedicated deleteResults path (which already has its own results-delete/unarchive fallback).
+      let deletedResults = Array.isArray(r.deletedResults) ? r.deletedResults : [];
+      if (withResults && !Array.isArray(r.deletedResults) && deleted.length) {
+        deletedResults = (await this.deleteResults(deleted)).deleted || [];
+      }
+      return { deleted, deletedResults };
     },
     async moveItems(ids, spec) {
-      const r = await call('move', 'POST', { ids, ...spec });
-      return { moved: r.moved || [] };
+      try {
+        return { moved: (await call('move', 'POST', { ids, ...spec })).moved || [] };
+      } catch (error) {
+        if (!/failed 40[04]/.test(String(error.message))) throw error;
+        // The live vault-review-mobile deployment's per-card move op spells the destination fields
+        // toProject/toSet (matching its whole-group `rename` op); the admin surface this CLI was
+        // written against spells the same fields project/set. Same operation, different names.
+        const legacySpec = {};
+        if (Object.prototype.hasOwnProperty.call(spec, 'project')) legacySpec.toProject = spec.project;
+        if (Object.prototype.hasOwnProperty.call(spec, 'set')) legacySpec.toSet = spec.set;
+        const r = await call('move', 'POST', { ids, ...legacySpec });
+        return { moved: r.moved || [], legacyEndpoint: true };
+      }
     },
     async putResults(results) {
       try {
@@ -267,14 +292,22 @@ function cloudAdapter(url) {
         return { written: r.written || [] };
       } catch (error) {
         if (!/failed 40[04]/.test(String(error.message))) throw error;
-        // Deployment older than the admin surface: /api/submit has always accepted an archive.
+        // Deployment older than the admin surface: no bulk results-put. /api/submit has always taken
+        // one result at a time and has always understood chosen, comment/notes, and archived — replay
+        // each result's actual shape through it instead of collapsing every result (including real
+        // `answer` decisions) into an archive.
         const written = [];
         const failed = [];
         for (const result of results) {
+          const body = { id: result.id };
+          if (result.archived === true) body.archived = true;
+          if (typeof result.chosen === 'string') body.chosen = result.chosen;
+          const note = result.note ?? result.comment;
+          if (typeof note === 'string') body.notes = note;
           const response = await fetch(`${base}/api/submit`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: result.id, archived: true, ...(result.note ? { notes: result.note } : {}) }),
+            body: JSON.stringify(body),
           });
           if (response.ok) written.push(result.id);
           else failed.push({ id: result.id, status: response.status });

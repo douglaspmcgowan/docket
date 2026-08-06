@@ -247,4 +247,59 @@ describe('docket-cli cloud adapter contract', () => {
     delete process.env.REVIEW_SECRET;
     assert.throws(() => cli.cloudAdapter('https://example.invalid'), /Invoke-WithBitwardenSecret/);
   });
+
+  // The three fallbacks below cover the live vault-review-mobile deployment, which spells several
+  // sync ops (or their bodies/responses) differently than the admin surface this CLI was written
+  // against. Verified live against the deployment too; these lock the behavior in for CI.
+
+  it('replays a chosen answer through /api/submit instead of collapsing it into an archive', async () => {
+    process.env.REVIEW_SECRET = 'test-secret-value-1234567890';
+    const calls = stubFetch({
+      'op=results-put': { ok: false, status: 400, text: async () => 'bad op' },
+      '/api/submit': json({ ok: true }),
+    });
+    const outcome = await cli.cloudAdapter('https://example.invalid')
+      .putResults([{ id: 'a', chosen: 'yes', comment: 'note', answered_at: '2026-01-01T00:00:00Z' }]);
+    assert.deepEqual(outcome.written, ['a']);
+    assert.equal(outcome.legacyEndpoint, true);
+    assert.equal(calls.at(-1).body.chosen, 'yes');
+    assert.equal(calls.at(-1).body.notes, 'note');
+    assert.equal(calls.at(-1).body.archived, undefined);
+    delete process.env.REVIEW_SECRET;
+  });
+
+  it('falls back to toProject/toSet when a deployment rejects project/set on ?op=move', async () => {
+    process.env.REVIEW_SECRET = 'test-secret-value-1234567890';
+    // Two different responses for the same op: first call (project/set) fails, second (toProject/
+    // toSet) succeeds. stubFetch only supports one response per route, so drive it by hand instead.
+    const calls = [];
+    let attempt = 0;
+    global.fetch = async (url, init = {}) => {
+      calls.push({ url: String(url), method: init.method, body: init.body ? JSON.parse(init.body) : undefined });
+      attempt += 1;
+      if (attempt === 1) return { ok: false, status: 400, text: async () => 'toProject or toSet required' };
+      return json({ ok: true, moved: ['a'] });
+    };
+    const outcome = await cli.cloudAdapter('https://example.invalid').moveItems(['a'], { project: 'P', set: 'S' });
+    assert.deepEqual(outcome.moved, ['a']);
+    assert.equal(outcome.legacyEndpoint, true);
+    assert.equal(calls[0].body.project, 'P');
+    assert.equal(calls[1].body.toProject, 'P');
+    assert.equal(calls[1].body.toSet, 'S');
+    delete process.env.REVIEW_SECRET;
+  });
+
+  it('cascades delete --with-results itself when a deployment reports deleted as a count', async () => {
+    process.env.REVIEW_SECRET = 'test-secret-value-1234567890';
+    const calls = stubFetch({
+      'op=delete': json({ ok: true, deleted: 1, removed: [{ id: 'a' }] }),
+      'op=results-delete': { ok: false, status: 400, text: async () => 'bad op' },
+      'op=unarchive': json({ ok: true, unarchived: 1, skipped: [] }),
+    });
+    const outcome = await cli.cloudAdapter('https://example.invalid').deleteItems(['a'], true);
+    assert.deepEqual(outcome.deleted, ['a']);
+    assert.deepEqual(outcome.deletedResults, ['a']);
+    assert.equal(calls.some(c => c.url.includes('op=unarchive')), true);
+    delete process.env.REVIEW_SECRET;
+  });
 });
