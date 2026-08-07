@@ -33,7 +33,7 @@ Agents may create local commits for in-scope work without asking. Never push, me
 
 ## Start and resume
 
-1. Read this file, `TASK.md`, `STATUS.md`, and recent `LOG.md`.
+1. Read this file, `TASK.md`, and recent `LOG.md`.
 2. Run `git status --short --branch` and inspect worktrees.
 3. Read `SPEC.md` for the feature contract, `MAP.md` for architecture and data flow, and `DESIGN.md` for interface rules.
 4. Read `data-manifest.yaml` before external-data work.
