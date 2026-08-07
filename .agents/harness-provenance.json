@@ -16,23 +16,19 @@
     },
     {
       "path": "DESIGN.md",
-      "sha256": "e441b8a467d3e6100bc60b760df792ae491987f6743621b169b6215ffab5f176"
+      "sha256": "477fe60e085897bb022c77c12d2a4ff0a4a380006505c68a32e4936bdf2ba290"
     },
     {
       "path": "MAP.md",
-      "sha256": "dab72b3604254ccd3a87ce8342817f4b1f59de6855cf59e197a58db74eaccdba"
+      "sha256": "9afc13d108771557bedf656cbff4067359821daa1acaade257acb0d3ae153ca1"
     },
     {
       "path": "TASK.md",
-      "sha256": "58b1a29e3ba684e87d5616f457908698d5afe30e4467e0ba7f2b15068e1653a3"
-    },
-    {
-      "path": "STATUS.md",
-      "sha256": "3d6ec0bc1f3857e3faf4865cb715b377d311d5ca2333789b9c81e911e49527b8"
+      "sha256": "1bbbf73c6d43eb84e168ae2298b46e8929f18e1bbea6f4a078100c4bcb4de5c2"
     },
     {
       "path": "LOG.md",
-      "sha256": "57f668ecdc320716c64e17802b1a30d02fa06ae68a95449c87a99744e210b6db"
+      "sha256": "68e0da410f2cc0d24239b67b6c807094a50f2f6a557c5c86300aa8cae3187269"
     },
     {
       "path": "BACKBURNER.md",
