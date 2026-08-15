@@ -6,13 +6,11 @@
 .agents/skills/brainstorming/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/brandkit/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/dispatching-parallel-agents/** whitespace=-blank-at-eol,-blank-at-eof
-.agents/skills/doctor/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/executing-plans/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/finishing-a-development-branch/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/frontend-slides/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/full-output-enforcement/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/gpt-taste/** whitespace=-blank-at-eol,-blank-at-eof
-.agents/skills/high-end-visual-design/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/html-slides/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/hue/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/image-to-code/** whitespace=-blank-at-eol,-blank-at-eof
@@ -22,7 +20,6 @@
 .agents/skills/industrial-brutalist-ui/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/minimalist-ui/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/receiving-code-review/** whitespace=-blank-at-eol,-blank-at-eof
-.agents/skills/redesign-existing-projects/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/requesting-code-review/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/stitch-design-taste/** whitespace=-blank-at-eol,-blank-at-eof
 .agents/skills/subagent-driven-development/** whitespace=-blank-at-eol,-blank-at-eof
