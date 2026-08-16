@@ -7,7 +7,7 @@ assets:
     class: "live-document-object-state"
     authority: "The linked private Vercel Blob store containing items.json, results.json, tickets.json, and reads.json"
     local_destination: "private/docket-cloud-exports"
-    adapter: ".agents/data/Manage-DocketBlob.ps1"
+    adapter: ".agents/data/Publish-DocketAuthority.ps1"
     version_rule: "Each export records its UTC generation time and the source ETag of every authoritative document"
     integrity_rule: "The export must contain exactly four schema-valid documents with matching SHA-256 checksums and record counts"
     restore_verifier: "Run Manage-DocketBlob.ps1 Verify, a mutation-free Restore dry run, then Restore -Disposable into an empty local target"
