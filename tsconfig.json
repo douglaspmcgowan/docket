@@ -1,0 +1,38 @@
+{
+  // Docket has no build step: `public/index.html` is served verbatim and every Node entry point runs
+  // straight from source. This config therefore only ever CHECKS (`noEmit`), and no file is renamed to
+  // `.ts` — the 62 CommonJS files are spawned by name from `.cmd` wrappers, `docket.ps1`,
+  // `docket-daemon.vbs`, the README commands, Vercel's `api/*.js` convention and the test suite, so a
+  // rename breaks installed launchers rather than improving anything.
+  //
+  // `checkJs` plus the seven strict flags below hold at ZERO errors. Three flags are deliberately off,
+  // with the measured distance recorded so this can only ratchet up (see LOG.md 2026-09-27):
+  //   noImplicitAny                 297 errors — a JSDoc annotation on every parameter in 62 files
+  //   strictNullChecks               ~20 errors
+  //   useUnknownInCatchVariables      15 errors, all `e.message` inside a catch; four of them gate a
+  //                                  `throw error` rethrow on a regex over that message, so each needs
+  //                                  a per-site behaviour decision rather than a blanket cast.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+
+    "strict": false,
+    "alwaysStrict": true,
+    "noImplicitThis": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["api/**/*.js", "*.js", "scripts/**/*.js"],
+  "exclude": ["node_modules", "public/**", "test/**", ".local/**"]
+}

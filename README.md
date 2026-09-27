@@ -1,4 +1,9 @@
-# vault-review-mobile
+# Docket
+
+The product is Docket. `vault-review-mobile` is only the Vercel project name and the deployment
+hostname, which is why it is still the `name` in `package.json`, the host in every client default, and
+the `project` key in `secret-manifest.json` — renaming those would break the deployment and the
+credential broker, so the name stays and this line explains it.
 
 Docket is a phone-accessible review, brief, and decision queue hosted on Vercel. Four private
 Vercel Blob documents are the network authority. Every mutation uses ETag compare-and-swap, so
@@ -15,7 +20,8 @@ available for compatibility and recovery work.
 
 The local mirror binds only to loopback and uses an in-process trust marker that network headers
 cannot spoof. The public deployment requires bearer authentication on every API request and fails
-closed when `APP_SECRET` is unavailable.
+closed when `APP_SECRET` is unavailable. Sora is served from `public/fonts/`, so the mirror reaches no
+third party at all and renders the same face with the network unplugged.
 
 ## Quickstart
 
@@ -24,16 +30,24 @@ Run these commands in PowerShell from this repository:
 ```powershell
 npm.cmd ci
 npm.cmd run browser:install
-node local-server.js
+npm.cmd start
 ```
+
+`npm.cmd start` is `node local-server.js`; both work. `PORT` and `LOCAL_STORE_DIR` override the
+defaults (`8471`, `~/.docket-local`).
 
 Run the offline verification suite in a second PowerShell window:
 
 ```powershell
 node enqueue.js --selftest
 node sync-cloud.js --selftest
+npm.cmd run typecheck
 npm.cmd test
 ```
+
+There is no build step. `public/index.html` is served verbatim and every Node entry point runs from
+source, so `npm.cmd run typecheck` type-checks the JavaScript in place (`tsc --noEmit`, `checkJs`) and
+emits nothing.
 
 Cloud publication uses the Bitwarden broker workflow documented below. Keep credential values out
 of this repository, command arguments, shell history, logs, and documentation.

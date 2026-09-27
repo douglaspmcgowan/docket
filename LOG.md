@@ -26,3 +26,35 @@
 2026-07-29 | The cloud-style 390-by-844 phone proof rejected a wrong bearer, accepted the correct bearer, and persisted a submitted decision without loopback trust.
 2026-07-30 | Production deployment `dpl_G4gdFWcZF9K4L67DUEgWp3q2zWAM` went live, aliased to `https://vault-review-mobile.vercel.app`.
 2026-08-06 | Folded `STATUS.md` into `MAP.md`'s `## State` section and this log per the 2026-08-06 decision to stop maintaining a separate durable-state file.
+2026-09-27 | App-repair stage 2, non-visual only: the 153-test suite is green for the first time (`test/legacy-sync-wrappers.test.js` spawned `cmd.exe /d /c <bare filename>` and this host sets `NoDefaultCurrentDirectoryInExePath`, so cmd returned 1 instead of the wrapper's `exit /b 2`; it now spawns an absolute path), CI runs that suite and a typecheck rather than gitleaks alone, every dependency specifier is exact, the styling is fully tokenised at its current values, Sora is self-hosted, and `tsc --noEmit` passes over the CommonJS sources with no file renamed.
+2026-09-27 | Sora moved from three `fonts.googleapis.com` `<link>`s to eight `@fontsource/sora` 5.3.0 woff2 subsets in `public/fonts/` (~100 KB, same per-subset `unicode-range` Google served). This was a false claim as much as a performance one: `local-server.js` says "nothing here ever leaves the machine" and the README repeats it, while the page fetched a stylesheet from a third party on every load and fell back to a different face offline. Proof of no visual change: with read state held constant, the Google-hosted and self-hosted pages are byte-identical across 211 elements x 47 computed properties plus every bounding rect, in both themes.
+2026-09-27 | TypeScript, as far as it goes honestly: no file was renamed to `.ts` because the 62 CommonJS entry points are spawned by name from the `.cmd` wrappers, `docket.ps1`, `docket-daemon.vbs`, the README commands, Vercel's `api/*.js` convention and the test suite. Instead `tsconfig.json` turns on `checkJs` plus seven strict flags at ZERO errors, wired as `npm run typecheck` and as the first CI job step. Four real fixes got it there: Date subtraction in `api/_retention.js` is now `getTime()`, `consolidate-projects.js` reads the gitignored `_cloud_items.json` with `fs.readFileSync` instead of `require`ing a file that need not exist, and two type-only JSDoc annotations cover `api/sync.js`'s function-with-helpers export and `enqueue.js`'s progressively-widened `card`. Full `strict: true` is 502 errors away and is NOT claimed: `noImplicitAny` 297, `strictNullChecks` about 20, `useUnknownInCatchVariables` 15 (all `e.message` in a catch, four of which gate a `throw error` rethrow on a regex over that message, so each needs a per-site behaviour decision rather than a blanket cast).
+2026-09-27 | The CONVERGE verdict in `APP-REPAIR-SPEC.md` is wrong for this app and was not executed. Docket has an EMPTY framework slot: no bundler, no build script, one 1366-line `public/index.html` served verbatim, a `node:http` mirror that reuses the four Vercel handlers unmodified, and `node:sqlite` locally. There is nothing to move to Next.js App Router -- the work would be writing the app again in React, and the program's own proof that a move was a move (the suite passing unchanged) is unavailable because a test byte-compares `GET /` against `public/index.html`. The same specification also calls the suite "30 Playwright specs"; all 30 are `node:test` files and exactly one drives chromium from inside `node --test`. Neither correction was written into that file, which lives in a concurrent lane's active worktree.
+
+Floor, before (master @ 37d00fd) and after, measured by the same regex scan over `public/index.html` + `public/mdtable.js` + `public/search.js`:
+
+```
+column                      before    after
+node --test                 152/153, exit 1   155/155, exit 0
+tsc --noEmit                (no config)       exit 0
+floating dep specifiers     2                 0
+third-party requests        3 (Google Fonts)  0
+custom properties defined   22                77
+custom property uses        248               383
+colour literals, total      75                71
+colour literals outside a token block  many   0 hex, 0 rgb/hsl, 0 oklch
+font sizes distinct         22 (1 tokenised)  22 (22 tokenised)
+border radii distinct       12 (0 tokenised)  12 (12 tokenised)
+z-index distinct            7  (0 tokenised)  7  (7 tokenised)
+:focus-visible              8                 23
+bare :focus                 0                 0
+transitions                 10                18
+prefers-color-scheme: dark  3                 3
+prefers-reduced-motion      3                 3
+@media                      12                12
+@keyframes                  2                 2
+!important                  2                 2
+impeccable slop rules hit   0 of 32           0 of 32
+```
+
+The two `!important`s stay. Both are `*{transition:none!important;animation:none!important}` inside the `prefers-reduced-motion: reduce` block, which is the one legitimate use; the program's blanket "remove every `!important`" would break a floor here rather than raise one. No column is worse.

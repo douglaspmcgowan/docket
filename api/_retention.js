@@ -37,7 +37,7 @@ function isoWeekKey(date) {
   day.setUTCDate(day.getUTCDate() + 4 - (day.getUTCDay() || 7));
   const isoYear = day.getUTCFullYear();
   const yearStart = new Date(Date.UTC(isoYear, 0, 1));
-  const week = Math.ceil((((day - yearStart) / 86400000) + 1) / 7);
+  const week = Math.ceil((((day.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   return `${isoYear}-W${String(week).padStart(2, '0')}`;
 }
 

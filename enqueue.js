@@ -344,6 +344,7 @@ async function main() {
 
   // Read stdin ONLY when explicitly asked (--file -). Auto-reading fd 0 hangs when a caller (agent,
   // scheduled job) invokes with no TTY and no pipe, so it must be opt-in.
+  /** @type {any} */ // widened below: card.card arrives from --file and is replaced by resolveBriefBody.
   let card = { ...o };
   if (o.file === '-') card.card = JSON.parse(readStdin());
   else if (o.file) card.card = JSON.parse(fs.readFileSync(o.file, 'utf8'));
