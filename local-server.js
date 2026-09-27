@@ -30,7 +30,10 @@ const handlers = {
 };
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+  '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
+  // Sora now ships from public/fonts/ instead of being fetched from fonts.gstatic.com, so that this
+  // file's own header claim -- nothing here ever leaves the machine -- is actually true.
+  '.woff2': 'font/woff2' };
 
 // Shim a Node req/res into the { req.query, req.body, res.status().json() } shape the handlers expect.
 function shim(req, res, body) {

@@ -134,6 +134,7 @@ function localAdapter(storeDir) {
   process.env.LOCAL_STORE_DIR = storeDir;
   // Required lazily and after LOCAL_STORE_DIR is set: _store picks its backend at module load.
   const store = require('./api/_store');
+  /** @type {any} */ // api/sync.js exports a handler function with helpers hung off it (module.exports.applyDelete, .applyMove); the checker sees only the function.
   const sync = require('./api/sync');
   const asList = document => Object.values(document || {});
   return {

@@ -36,6 +36,7 @@ taskstate/
 !/.nvmrc
 !/package.json
 !/package-lock.json
+!/tsconfig.json
 !/README.md
 !/RESUME.md
 !/SPEC.md

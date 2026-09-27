@@ -2,12 +2,13 @@
   "name": "vault-review-mobile",
   "private": true,
   "version": "1.0.0",
-  "description": "Phone-accessible review board backed by a private Vercel Blob store; synced from the local Workbench.",
+  "description": "Docket: phone-accessible brief, review and decision queue. The npm name is the Vercel project name; the product is Docket.",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "test": "node --test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "browser:install": "playwright install chromium",
     "start": "node local-server.js",
     "sync": "node sync.js",
@@ -19,6 +20,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@playwright/test": "1.62.0"
+    "@fontsource/sora": "5.3.0",
+    "@playwright/test": "1.62.0",
+    "@types/node": "22.19.1",
+    "typescript": "5.9.3"
   }
 }

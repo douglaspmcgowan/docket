@@ -74,7 +74,11 @@ const post = (p, body, secret) => new Promise((res, rej) => {
 
 (async () => {
   // Local: read the raw store map (full fidelity). Cloud: the pending set from _fetch_audit.js.
-  const items = LOCAL ? Object.values(JSON.parse(fs.readFileSync(STORE, 'utf8'))) : require('./_cloud_items.json');
+  // _cloud_items.json is a gitignored scratch dump written by _fetch_audit.js, so it is absent from a
+  // fresh checkout. Read it the same way the local branch reads its store rather than require()ing a
+  // file that need not exist: identical value, and a missing file now fails with its own path.
+  const items = LOCAL ? Object.values(JSON.parse(fs.readFileSync(STORE, 'utf8')))
+    : JSON.parse(fs.readFileSync(path.join(__dirname, '_cloud_items.json'), 'utf8'));
   const beforeProjects = new Set(items.map(it => classify(it).project));
   let changed = 0;
   for (const it of items) {
