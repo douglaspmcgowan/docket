@@ -15,9 +15,10 @@
     "data:verify-concurrency": "node scripts/verify-blob-concurrency.js"
   },
   "dependencies": {
-    "@vercel/blob": "^2.3.0"
+    "@vercel/blob": "2.6.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0"
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.62.0"
   }
 }

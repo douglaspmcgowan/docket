@@ -14,7 +14,9 @@ test('legacy sync wrappers fail with the approved BWS broker command', () => {
     assert.match(source, /exit \/b 2/);
     assert.doesNotMatch(source, /node\s+"%~dp0sync\.js"/i);
     if (process.platform === 'win32') {
-      const result = spawnSync('cmd.exe', ['/d', '/c', file], { cwd: root, encoding: 'utf8' });
+      // Spawn by absolute path: when NoDefaultCurrentDirectoryInExePath is set, cmd.exe refuses to
+      // resolve a bare filename from cwd and exits 1 before the wrapper's own `exit /b 2` can run.
+      const result = spawnSync('cmd.exe', ['/d', '/c', path.join(root, file)], { cwd: root, encoding: 'utf8' });
       assert.equal(result.status, 2);
       assert.match(`${result.stdout}\n${result.stderr}`, /Invoke-WithBitwardenSecret\.ps1.*docket-sync/s);
     }

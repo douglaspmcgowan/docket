@@ -1,0 +1,41 @@
+name: test
+
+# The node:test suite is this repository's invariant: it is what proves a change to the board did
+# not break the board. Until 2026-09-26 the only job that ran on a push was gitleaks, so the suite
+# existed and nothing ran it. This job runs it.
+#
+# windows-latest, not ubuntu: the suite exercises the `.cmd` broker wrappers and the Windows-shaped
+# local tooling, and windows-latest is the platform the 153/153 local pass was measured on.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-test:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # test/phone-e2e.test.js and test/axe-primary-surface.test.js drive a real chromium.
+      - name: Install chromium
+        run: npm run browser:install
+
+      - run: npm test
